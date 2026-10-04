@@ -1,0 +1,195 @@
+import 'package:flutter/material.dart';
+
+import '../../../app/localization.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../data/ayah_links/ayah_link_model.dart';
+import '../../../data/ayah_links/ayah_link_repository.dart';
+
+/// Minimal dialog to create or edit an Ayah Link.
+///
+/// Keeps fields minimal: Title is required, Description/Idea is optional.
+class CreateLinkDialog extends StatefulWidget {
+  final AyahLinkItem? existingLink;
+
+  const CreateLinkDialog({super.key, this.existingLink});
+
+  static Future<AyahLinkItem?> show(
+    BuildContext context, {
+    AyahLinkItem? existingLink,
+  }) {
+    return showDialog<AyahLinkItem>(
+      context: context,
+      builder: (_) => CreateLinkDialog(existingLink: existingLink),
+    );
+  }
+
+  @override
+  State<CreateLinkDialog> createState() => _CreateLinkDialogState();
+}
+
+class _CreateLinkDialogState extends State<CreateLinkDialog> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _descController;
+  final _formKey = GlobalKey<FormState>();
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(
+      text: widget.existingLink?.title ?? '',
+    );
+    _descController = TextEditingController(
+      text: widget.existingLink?.description ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+    final title = _titleController.text.trim();
+    final desc = _descController.text.trim();
+
+    try {
+      final repo = AyahLinkRepository();
+      AyahLinkItem result;
+
+      if (widget.existingLink != null) {
+        result = widget.existingLink!.copyWith(
+          title: title,
+          description: desc.isEmpty ? null : desc,
+        );
+        await repo.updateLink(result);
+      } else {
+        result = await repo.createLink(
+          title: title,
+          description: desc.isEmpty ? null : desc,
+        );
+      }
+
+      if (mounted) {
+        Navigator.pop(context, result);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isEditing = widget.existingLink != null;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        backgroundColor: isDark
+            ? AppColors.darkBackground
+            : AppColors.comsilkLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.hub_outlined, color: AppColors.olive, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              isEditing ? 'تعديل رابط الآيات' : l10n.newAyahLink,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _titleController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: l10n.linkTitle,
+                  hintText: l10n.linkTitleHint,
+                  filled: true,
+                  fillColor: isDark ? AppColors.darkSurface : AppColors.comsilk,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: isDark
+                          ? AppColors.darkSurfaceVariant
+                          : AppColors.lightBorder,
+                    ),
+                  ),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'يرجى إدخال عنوان الرابط';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _descController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: l10n.linkDescription,
+                  hintText: l10n.linkDescriptionHint,
+                  filled: true,
+                  fillColor: isDark ? AppColors.darkSurface : AppColors.comsilk,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: isDark
+                          ? AppColors.darkSurfaceVariant
+                          : AppColors.lightBorder,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            onPressed: _isSaving ? null : _submit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.olive,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    isEditing ? l10n.save : 'إنشاء',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
