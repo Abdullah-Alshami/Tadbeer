@@ -33,6 +33,7 @@ class _QuranScreenState extends State<QuranScreen> {
   late PageController _pageController;
   late int _currentPageIndex;
   Ayah? _activeSelectedAyah;
+  bool _showTopBar = false;
 
   @override
   void initState() {
@@ -216,18 +217,80 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
+  void _toggleTopBar() {
+    setState(() {
+      _showTopBar = !_showTopBar;
+    });
+  }
+
+  Widget _buildTopBar(BuildContext context, int currentPageNumber) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = context.l10n;
+    final pageDigits = ArabicSearchNormalizer.toArabicDigits(currentPageNumber);
+
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: (isDark ? AppColors.darkSurface : AppColors.comsilkLight)
+            .withValues(alpha: 0.95),
+        border: Border(
+          bottom: BorderSide(
+            color: (isDark ? AppColors.darkBorder : AppColors.lightBorder)
+                .withValues(alpha: 0.6),
+            width: 0.8,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Current page number button (at far right in RTL)
+          InkWell(
+            onTap: _showJumpToPageDialog,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Text(
+                'ص $pageDigits',
+                style: TextStyle(
+                  fontFamily: 'Amiri',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Search button (to the left of page number)
+          IconButton(
+            icon: const Icon(Icons.search, size: 22),
+            tooltip: l10n.search,
+            color: isDark
+                ? AppColors.darkTextPrimary
+                : AppColors.lightTextPrimary,
+            onPressed: _openSearch,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final repo = QuranRepository.instance;
     final currentPageNumber = _currentPageIndex + 1;
-    final currentPageData = repo.getPage(currentPageNumber);
-
-    final firstSurahNumber = currentPageData.surahNumbers.isNotEmpty
-        ? currentPageData.surahNumbers.first
-        : 1;
-    final surah = repo.getSurah(firstSurahNumber);
-    final surahTitle = 'سورة ${surah.name}';
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -237,77 +300,52 @@ class _QuranScreenState extends State<QuranScreen> {
           currentPage: currentPageNumber,
           onPageSelected: _jumpToMushafPage,
         ),
-        appBar: AppBar(
-          leading: const BackButton(),
-          title: Text(
-            '$surahTitle · ص ${ArabicSearchNormalizer.toArabicDigits(currentPageNumber)}',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          actions: [
-            // Side menu / index
-            IconButton(
-              icon: const Icon(Icons.menu_book),
-              tooltip: 'فهرس المصحف',
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            ),
-            // Quran Search Action
-            IconButton(
-              icon: const Icon(Icons.search),
-              tooltip: l10n.search,
-              onPressed: _openSearch,
-            ),
-            // Popup menu for secondary actions
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              tooltip: l10n.more,
-              onSelected: (val) {
-                if (val == 'jump') {
-                  _showJumpToPageDialog();
-                } else if (val == 'home') {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'jump',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.swap_horiz, size: 20),
-                      const SizedBox(width: 8),
-                      Text(l10n.jumpToPage),
-                    ],
+        body: Stack(
+          children: [
+            // Fullscreen Mushaf page area (maximum space, no reserved bar space)
+            Positioned.fill(
+              child: SafeArea(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _toggleTopBar,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: 604,
+                    onPageChanged: _onPageChanged,
+                    itemBuilder: (context, index) {
+                      final page = repo.getPage(index + 1);
+                      return QuranPageView(
+                        page: page,
+                        pageNumber: index + 1,
+                        selectedAyah: _activeSelectedAyah,
+                        onAyahTap: _handleAyahTap,
+                        onAyahLongPress: _handleAyahLongPress,
+                      );
+                    },
                   ),
                 ),
-                PopupMenuItem(
-                  value: 'home',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.home_outlined, size: 20),
-                      const SizedBox(width: 8),
-                      Text(l10n.home),
-                    ],
+              ),
+            ),
+
+            // Smooth floating top bar overlay
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: IgnorePointer(
+                  ignoring: !_showTopBar,
+                  child: AnimatedOpacity(
+                    opacity: _showTopBar ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    child: _buildTopBar(context, currentPageNumber),
                   ),
                 ),
-              ],
+              ),
             ),
           ],
-        ),
-        body: SafeArea(
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: 604,
-            onPageChanged: _onPageChanged,
-            itemBuilder: (context, index) {
-              final page = repo.getPage(index + 1);
-              return QuranPageView(
-                page: page,
-                pageNumber: index + 1,
-                selectedAyah: _activeSelectedAyah,
-                onAyahTap: _handleAyahTap,
-                onAyahLongPress: _handleAyahLongPress,
-              );
-            },
-          ),
         ),
       ),
     );

@@ -19,7 +19,7 @@ class MushafWordWidget extends StatelessWidget {
   final ValueChanged<Ayah>? onAyahLongPress;
 
   /// Fixed, standard Quran typography font size uniform across all 604 pages.
-  static const double quranFontSize =20;
+  static const double quranFontSize = 23;
 
   const MushafWordWidget({
     super.key,

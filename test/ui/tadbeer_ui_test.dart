@@ -128,7 +128,7 @@ void main() {
     });
 
     testWidgets(
-      'QuranScreen has Search, Back, and PopupMenu navigation actions',
+      'QuranScreen top bar is hidden by default and toggles on tap with Search and Page jump',
       (WidgetTester tester) async {
         await tester.runAsync(() async {
           await UserDataStore.instance.updateSettings(
@@ -148,10 +148,50 @@ void main() {
         // Should be on QuranScreen
         expect(find.byType(QuranScreen), findsOneWidget);
 
-        // Verify Back button, Search button, and PopupMenuButton exist in AppBar
-        expect(find.byType(BackButton), findsOneWidget);
+        // 1. Verify top bar is hidden by default
+        final animatedOpacityFinder = find.descendant(
+          of: find.byType(QuranScreen),
+          matching: find.byType(AnimatedOpacity),
+        );
+        expect(animatedOpacityFinder, findsOneWidget);
+        AnimatedOpacity opacityWidget = tester.widget(animatedOpacityFinder);
+        expect(opacityWidget.opacity, 0.0);
+
+        // 2. Tap on QuranScreen to reveal animated overlay top bar
+        await tester.tap(find.byType(QuranScreen));
+        await tester.pumpAndSettle();
+
+        opacityWidget = tester.widget(animatedOpacityFinder);
+        expect(opacityWidget.opacity, 1.0);
+
+        // Verify Search button and Page Number button exist in top bar
         expect(find.byTooltip('البحث'), findsOneWidget);
-        expect(find.byType(PopupMenuButton<String>), findsOneWidget);
+        expect(find.textContaining('ص '), findsWidgets);
+
+        // 3. Tap Page Number button to open jump-to-page dialog
+        final pageButtonFinder = find
+            .descendant(
+              of: find.byType(QuranScreen),
+              matching: find.textContaining('ص '),
+            )
+            .first;
+        await tester.tap(pageButtonFinder);
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget);
+
+        // Cancel dialog
+        await tester.tap(find.text('إلغاء'));
+        await tester.pumpAndSettle();
+
+        // 4. Tap page to hide top bar again
+        await tester.tap(find.byType(QuranScreen));
+        await tester.pumpAndSettle();
+        opacityWidget = tester.widget(animatedOpacityFinder);
+        expect(opacityWidget.opacity, 0.0);
+
+        // Reveal again to test search navigation
+        await tester.tap(find.byType(QuranScreen));
+        await tester.pumpAndSettle();
 
         // Tapping Search opens SearchScreen
         await tester.tap(find.byTooltip('البحث'));
@@ -163,8 +203,8 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(QuranScreen), findsOneWidget);
 
-        // Tapping BackButton on QuranScreen returns to HomeScreen
-        await tester.tap(find.byType(BackButton));
+        // Returning from QuranScreen goes back to HomeScreen
+        await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
         expect(find.byType(HomeScreen), findsOneWidget);
       },

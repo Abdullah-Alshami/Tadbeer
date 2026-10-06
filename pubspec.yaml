@@ -34,7 +34,6 @@ dependencies:
   path_provider: ^2.1.6
   crypto: ^3.0.7
   encrypt: ^5.0.3
-  intl: ^0.20.3
   pdf: ^3.13.1
   share_plus: ^13.3.1
   file_picker: ^13.1.0
@@ -45,7 +44,6 @@ dependencies:
   sqflite_common: ^2.5.13+1
   sqflite_common_ffi: ^2.4.3
   path: ^1.9.1
-  mushaf_text: ^1.4.0
 
 dev_dependencies:
   flutter_test:
@@ -78,9 +76,6 @@ flutter:
     - assets/quran/qcf_v2/glyphs/
 
   fonts:
-    - family: DigitalKhatt
-      fonts:
-        - asset: assets/fonts/DigitalKhattV2.otf
     - family: AmiriQuran
       fonts:
         - asset: assets/fonts/AmiriQuran-Regular.ttf
