@@ -11,8 +11,8 @@ import '../../../shared/widgets/ayah_action_sheet.dart';
 import '../../../shared/widgets/surah_header_banner.dart';
 import '../../notes/note_editor_screen.dart';
 
-/// Authentic Medina Mushaf page renderer based on the King Fahd Complex (1421H)
-/// Hafs 604-page layout architecture from QUL (Word -> Line -> Page).
+/// Authentic Medina Mushaf page renderer based on the King Fahd Complex
+/// KFGQPC V4 (1441H print) Hafs 604-page, 15-line layout architecture from QUL.
 class MadinahPageRenderer extends StatelessWidget {
   final MushafPageLayout pageLayout;
   final Ayah? selectedAyah;
@@ -20,10 +20,7 @@ class MadinahPageRenderer extends StatelessWidget {
   final void Function(Ayah)? onAyahLongPress;
 
   /// Fixed, standard Quran typography font size uniform across all 604 pages.
-  static const double quranFontSize = 18.0;
-
-  /// Constant line rhythm vertical gap between lines.
-  static const double lineRhythmGap = 2.0;
+  static const double quranFontSize = 20.0;
 
   const MadinahPageRenderer({
     super.key,
@@ -42,25 +39,8 @@ class MadinahPageRenderer extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.comsilkLight,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark
-                ? AppColors.darkSurfaceVariant
-                : AppColors.olive.withValues(alpha: 0.18),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+        color: isDark ? AppColors.darkBackground : AppColors.comsilkLight,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -69,7 +49,7 @@ class MadinahPageRenderer extends StatelessWidget {
             _buildPageHeader(context, isDark),
             const SizedBox(height: 6),
 
-            // Page Content: Authentic lines with natural line rhythm and NO FittedBox
+            // Page Content: Authentic 15 lines with natural line rhythm and NO FittedBox
             Expanded(
               child: _buildPageLines(
                 context: context,
@@ -96,25 +76,35 @@ class MadinahPageRenderer extends StatelessWidget {
     final surah = repo.getSurah(firstSurahNumber);
 
     final headerColor = isDark
-        ? AppColors.comsilk.withValues(alpha: 0.7)
-        : AppColors.oliveDark.withValues(alpha: 0.75);
+        ? AppColors.comsilk.withValues(alpha: 0.8)
+        : AppColors.oliveDark.withValues(alpha: 0.85);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: isDark
+                ? AppColors.darkSurfaceVariant
+                : AppColors.lightBorder,
+            width: 0.8,
+          ),
+        ),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'الجزء ${ArabicSearchNormalizer.toArabicDigits(pageLayout.juzNumber)}',
+            'سُورَةُ ${surah.name}',
             style: TextStyle(
               fontFamily: 'Amiri',
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: headerColor,
             ),
           ),
           Text(
-            'سورة ${surah.name}',
+            'الجزء ${ArabicSearchNormalizer.toArabicDigits(pageLayout.juzNumber)}',
             style: TextStyle(
               fontFamily: 'Amiri',
               fontSize: 12,
@@ -128,16 +118,29 @@ class MadinahPageRenderer extends StatelessWidget {
   }
 
   Widget _buildPageFooter(BuildContext context, bool isDark) {
-    return Center(
-      child: Text(
-        ArabicSearchNormalizer.toArabicDigits(pageLayout.pageNumber),
-        style: TextStyle(
-          fontFamily: 'Amiri',
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: isDark
-              ? AppColors.comsilk.withValues(alpha: 0.7)
-              : AppColors.oliveDark.withValues(alpha: 0.7),
+    return Container(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: isDark
+                ? AppColors.darkSurfaceVariant
+                : AppColors.lightBorder,
+            width: 0.8,
+          ),
+        ),
+      ),
+      child: Center(
+        child: Text(
+          ArabicSearchNormalizer.toArabicDigits(pageLayout.pageNumber),
+          style: TextStyle(
+            fontFamily: 'Amiri',
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: isDark
+                ? AppColors.comsilk.withValues(alpha: 0.8)
+                : AppColors.oliveDark.withValues(alpha: 0.8),
+          ),
         ),
       ),
     );
@@ -165,9 +168,9 @@ class MadinahPageRenderer extends StatelessWidget {
 
         case MushafLineType.bismillah:
           lineWidgets.add(
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: _buildBismillah(context, isDark),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 2),
+              child: BismillahBanner(),
             ),
           );
           break;
@@ -185,34 +188,18 @@ class MadinahPageRenderer extends StatelessWidget {
       }
     }
 
-    // Natural, constant vertical line rhythm across all pages.
-    // Short pages (Page 1 & 2) sit naturally at the top with bottom whitespace,
-    // without stretching spaces vertically.
+    final isShortPage = pageLayout.lines.length < 15;
     return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment: isShortPage
+          ? MainAxisAlignment.start
+          : MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
       children: [
         for (int i = 0; i < lineWidgets.length; i++) ...[
-          if (i > 0) const SizedBox(height: lineRhythmGap),
+          if (isShortPage && i > 0) const SizedBox(height: 6),
           lineWidgets[i],
         ],
       ],
-    );
-  }
-
-  Widget _buildBismillah(BuildContext context, bool isDark) {
-    return Center(
-      child: Text(
-        'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontFamily: 'DigitalKhatt',
-          fontFamilyFallback: const ['AmiriQuran', 'Amiri'],
-          fontSize: quranFontSize,
-          color: isDark ? AppColors.comsilk : AppColors.oliveDark,
-        ),
-      ),
     );
   }
 
@@ -310,10 +297,10 @@ class MadinahPageRenderer extends StatelessWidget {
             recognizer: tapRecognizer,
             style: TextStyle(
               fontFamily: 'AmiriQuran',
-              fontFamilyFallback: const ['Amiri'],
+              fontFamilyFallback: const ['DigitalKhatt', 'Amiri'],
               fontSize: quranFontSize,
               fontWeight: FontWeight.bold,
-              color: isDark ? AppColors.comsilk : AppColors.oliveDark,
+              color: isDark ? const Color(0xFFC9A77C) : AppColors.oliveDark,
             ),
           ),
         );
@@ -345,6 +332,8 @@ class MadinahPageRenderer extends StatelessWidget {
           ..onTap = () {
             if (onAyahTap != null) {
               onAyahTap!(ayah);
+            } else {
+              AyahActionSheet.show(context, ayah);
             }
           };
 
@@ -353,8 +342,8 @@ class MadinahPageRenderer extends StatelessWidget {
             text: '${word.text} ',
             recognizer: onAyahTap != null ? tapRecognizer : recognizer,
             style: TextStyle(
-              fontFamily: 'DigitalKhatt',
-              fontFamilyFallback: const ['AmiriQuran', 'Amiri'],
+              fontFamily: 'AmiriQuran',
+              fontFamilyFallback: const ['DigitalKhatt', 'Amiri'],
               fontSize: quranFontSize,
               color: textColor,
               backgroundColor: bgColor,
@@ -365,10 +354,10 @@ class MadinahPageRenderer extends StatelessWidget {
     }
 
     const baseTextStyle = TextStyle(
-      fontFamily: 'DigitalKhatt',
-      fontFamilyFallback: ['AmiriQuran', 'Amiri'],
+      fontFamily: 'AmiriQuran',
+      fontFamilyFallback: ['DigitalKhatt', 'Amiri'],
       fontSize: quranFontSize,
-      height: 1.4,
+      height: 1.35,
     );
 
     // If line is centered according to QUL layout: center align.

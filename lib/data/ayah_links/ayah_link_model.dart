@@ -57,7 +57,7 @@ class AyahLinkVerse {
 
   /// Returns the effective reflection note for this verse:
   /// 1. Specific note assigned within this link (if non-empty)
-  /// 2. User's general note or Tadabbur pause reflection for this Ayah
+  /// 2. User's general note or Tadbeer pause reflection for this Ayah
   String? getEffectiveNote() {
     if (note != null && note!.trim().isNotEmpty) {
       return note!.trim();

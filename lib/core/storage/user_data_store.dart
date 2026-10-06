@@ -10,7 +10,7 @@ import '../../data/bookmarks/bookmark_model.dart';
 import '../../data/highlights/highlight_model.dart';
 import '../../data/notes/note_model.dart';
 import '../../data/quran/quran_models.dart';
-import '../../data/quran/tadabbur_model.dart';
+import '../../data/quran/tadbeer_model.dart';
 import '../../data/reading_position/reading_position_model.dart';
 import '../../data/reminders/reminder_model.dart';
 import 'package:sqflite/sqflite.dart';
@@ -50,7 +50,7 @@ class UserDataStore extends ChangeNotifier {
   final List<HighlightItem> _highlights = [];
   final List<ReminderItem> _reminders = [];
   final List<AyahLinkItem> _ayahLinks = [];
-  final List<TadabburItem> _tadabburItems = [];
+  final List<TadbeerItem> _tadbeerItems = [];
   UserSettings _settings = const UserSettings();
 
   ReadingPosition get readingPosition => _readingPosition;
@@ -59,13 +59,14 @@ class UserDataStore extends ChangeNotifier {
   List<HighlightItem> get highlights => List.unmodifiable(_highlights);
   List<ReminderItem> get reminders => List.unmodifiable(_reminders);
   List<AyahLinkItem> get ayahLinks => List.unmodifiable(_ayahLinks);
-  List<TadabburItem> get tadabburItems => List.unmodifiable(_tadabburItems);
+  List<TadbeerItem> get tadbeerItems => List.unmodifiable(_tadbeerItems);
+  List<TadbeerItem> get tadabburItems => tadbeerItems;
   UserSettings get settings => _settings;
 
   // In-memory lookups for O(1) page rendering performance
   final Map<String, BookmarkItem> _bookmarkLookup = {};
   final Map<String, HighlightItem> _highlightLookup = {};
-  final Map<String, TadabburItem> _tadabburLookup = {};
+  final Map<String, TadbeerItem> _tadbeerLookup = {};
 
   File? _dataFile;
 
@@ -85,8 +86,8 @@ class UserDataStore extends ChangeNotifier {
       _highlightLookup.clear();
       _reminders.clear();
       _ayahLinks.clear();
-      _tadabburItems.clear();
-      _tadabburLookup.clear();
+      _tadbeerItems.clear();
+      _tadbeerLookup.clear();
       _settings = const UserSettings();
 
       final dbPath = testDbPath ?? inMemoryDatabasePath;
@@ -140,13 +141,13 @@ class UserDataStore extends ChangeNotifier {
         _ayahLinks.addAll(dbLinks);
       }
 
-      final dbTadabbur = await userDb.loadTadabburItems();
-      if (dbTadabbur.isNotEmpty) {
-        _tadabburItems.clear();
-        _tadabburLookup.clear();
-        for (final t in dbTadabbur) {
-          _tadabburItems.add(t);
-          _tadabburLookup[t.ayahKey] = t;
+      final dbTadbeer = await userDb.loadTadbeerItems();
+      if (dbTadbeer.isNotEmpty) {
+        _tadbeerItems.clear();
+        _tadbeerLookup.clear();
+        for (final t in dbTadbeer) {
+          _tadbeerItems.add(t);
+          _tadbeerLookup[t.ayahKey] = t;
         }
       }
 
@@ -238,14 +239,14 @@ class UserDataStore extends ChangeNotifier {
       _ayahLinks.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     }
 
-    _tadabburItems.clear();
-    _tadabburLookup.clear();
-    if (data.containsKey('tadabbur')) {
-      final rawTadabbur = data['tadabbur'] as List;
-      for (final t in rawTadabbur) {
-        final item = TadabburItem.fromJson(t as Map<String, dynamic>);
-        _tadabburItems.add(item);
-        _tadabburLookup[item.ayahKey] = item;
+    _tadbeerItems.clear();
+    _tadbeerLookup.clear();
+    final tadbeerData = data['tadbeer'] ?? data['tadabbur'];
+    if (tadbeerData is List) {
+      for (final t in tadbeerData) {
+        final item = TadbeerItem.fromJson(t as Map<String, dynamic>);
+        _tadbeerItems.add(item);
+        _tadbeerLookup[item.ayahKey] = item;
       }
     }
 
@@ -277,8 +278,8 @@ class UserDataStore extends ChangeNotifier {
     for (final link in _ayahLinks) {
       await userDb.insertOrUpdateAyahLink(link);
     }
-    for (final item in _tadabburItems) {
-      await userDb.insertOrUpdateTadabbur(item);
+    for (final item in _tadbeerItems) {
+      await userDb.insertOrUpdateTadbeer(item);
     }
     await userDb.saveSettings(_settings);
   }
@@ -297,7 +298,8 @@ class UserDataStore extends ChangeNotifier {
         'highlights': _highlights.map((h) => h.toJson()).toList(),
         'reminders': _reminders.map((r) => r.toJson()).toList(),
         'ayahLinks': _ayahLinks.map((l) => l.toJson()).toList(),
-        'tadabbur': _tadabburItems.map((t) => t.toJson()).toList(),
+        'tadbeer': _tadbeerItems.map((t) => t.toJson()).toList(),
+        'tadabbur': _tadbeerItems.map((t) => t.toJson()).toList(),
         'settings': _settings.toJson(),
       };
 
@@ -793,8 +795,8 @@ class UserDataStore extends ChangeNotifier {
     _highlightLookup.clear();
     _reminders.clear();
     _ayahLinks.clear();
-    _tadabburItems.clear();
-    _tadabburLookup.clear();
+    _tadbeerItems.clear();
+    _tadbeerLookup.clear();
     _settings = const UserSettings();
     notifyListeners();
     final userDb = UserDatabase.instance;
@@ -807,27 +809,31 @@ class UserDataStore extends ChangeNotifier {
   Future<void> resetAllUserData() => resetAllData();
 
   // ==========================================
-  // TADABBUR PAUSE (وقفة تدبر)
+  // TADBEER PAUSE (وقفة تدبر)
   // ==========================================
 
-  TadabburItem? getTadabbur(int surahNumber, int ayahNumber) {
-    return _tadabburLookup['$surahNumber:$ayahNumber'];
+  TadbeerItem? getTadbeer(int surahNumber, int ayahNumber) {
+    return _tadbeerLookup['$surahNumber:$ayahNumber'];
   }
 
-  /// Resolves the most relevant reflection note for an ayah across Notes & Tadabbur.
+  /// Backward compatibility alias
+  TadbeerItem? getTadabbur(int surahNumber, int ayahNumber) =>
+      getTadbeer(surahNumber, ayahNumber);
+
+  /// Resolves the most relevant reflection note for an ayah across Notes & Tadbeer.
   String? getReflectionForAyah(int surahNumber, int ayahNumber) {
     final notes = findNotesForAyah(surahNumber, ayahNumber);
     if (notes.isNotEmpty && notes.first.content.trim().isNotEmpty) {
       return notes.first.content.trim();
     }
-    final tadabbur = getTadabbur(surahNumber, ayahNumber);
-    if (tadabbur != null && tadabbur.combinedSummary.isNotEmpty) {
-      return tadabbur.combinedSummary;
+    final tadbeer = getTadbeer(surahNumber, ayahNumber);
+    if (tadbeer != null && tadbeer.combinedSummary.isNotEmpty) {
+      return tadbeer.combinedSummary;
     }
     return null;
   }
 
-  Future<void> saveTadabbur({
+  Future<void> saveTadbeer({
     required int surahNumber,
     required int ayahNumber,
     int? ayahId,
@@ -844,20 +850,20 @@ class UserDataStore extends ChangeNotifier {
     final key = '$surahNumber:$ayahNumber';
     if (cleanedAnswers.isEmpty) {
       // Do not save empty responses; clean up if all were deleted
-      final existing = _tadabburLookup.remove(key);
-      _tadabburItems.removeWhere((t) => t.ayahKey == key);
+      final existing = _tadbeerLookup.remove(key);
+      _tadbeerItems.removeWhere((t) => t.ayahKey == key);
       notifyListeners();
       final userDb = UserDatabase.instance;
       if (userDb.isOpen && existing != null) {
-        await userDb.deleteTadabbur(existing.id);
+        await userDb.deleteTadbeer(existing.id);
       }
       await saveToDisk();
       return;
     }
 
     final now = DateTime.now();
-    final existing = _tadabburLookup[key];
-    final item = TadabburItem(
+    final existing = _tadbeerLookup[key];
+    final item = TadbeerItem(
       id: existing?.id ?? const Uuid().v4(),
       surahNumber: surahNumber,
       ayahNumber: ayahNumber,
@@ -867,33 +873,51 @@ class UserDataStore extends ChangeNotifier {
       updatedAt: now,
     );
 
-    final idx = _tadabburItems.indexWhere((t) => t.ayahKey == key);
+    final idx = _tadbeerItems.indexWhere((t) => t.ayahKey == key);
     if (idx != -1) {
-      _tadabburItems[idx] = item;
+      _tadbeerItems[idx] = item;
     } else {
-      _tadabburItems.add(item);
+      _tadbeerItems.add(item);
     }
-    _tadabburLookup[key] = item;
+    _tadbeerLookup[key] = item;
 
     notifyListeners();
     final userDb = UserDatabase.instance;
     if (userDb.isOpen) {
-      await userDb.insertOrUpdateTadabbur(item);
+      await userDb.insertOrUpdateTadbeer(item);
     }
     await saveToDisk();
   }
 
-  Future<void> deleteTadabbur(int surahNumber, int ayahNumber) async {
+  /// Backward compatibility alias
+  Future<void> saveTadabbur({
+    required int surahNumber,
+    required int ayahNumber,
+    int? ayahId,
+    required Map<int, String> answers,
+  }) =>
+      saveTadbeer(
+        surahNumber: surahNumber,
+        ayahNumber: ayahNumber,
+        ayahId: ayahId,
+        answers: answers,
+      );
+
+  Future<void> deleteTadbeer(int surahNumber, int ayahNumber) async {
     final key = '$surahNumber:$ayahNumber';
-    final existing = _tadabburLookup.remove(key);
-    _tadabburItems.removeWhere((t) => t.ayahKey == key);
+    final existing = _tadbeerLookup.remove(key);
+    _tadbeerItems.removeWhere((t) => t.ayahKey == key);
     notifyListeners();
     final userDb = UserDatabase.instance;
     if (userDb.isOpen && existing != null) {
-      await userDb.deleteTadabbur(existing.id);
+      await userDb.deleteTadbeer(existing.id);
     }
     await saveToDisk();
   }
+
+  /// Backward compatibility alias
+  Future<void> deleteTadabbur(int surahNumber, int ayahNumber) =>
+      deleteTadbeer(surahNumber, ayahNumber);
 
   // ==========================================
   // SNAPSHOT EXPORT / RESTORE
@@ -906,8 +930,10 @@ class UserDataStore extends ChangeNotifier {
     bool settings = true,
     bool reminders = true,
     bool ayahLinks = true,
-    bool tadabbur = true,
+    bool tadbeer = true,
+    bool? tadabbur,
   }) {
+    final includeTadbeer = tadabbur ?? tadbeer;
     return {
       'app': 'Tadbeer',
       'schemaVersion': currentSchemaVersion,
@@ -919,7 +945,10 @@ class UserDataStore extends ChangeNotifier {
       if (settings) 'settings': _settings.toJson(),
       if (reminders) 'reminders': _reminders.map((r) => r.toJson()).toList(),
       if (ayahLinks) 'ayahLinks': _ayahLinks.map((l) => l.toJson()).toList(),
-      if (tadabbur) 'tadabbur': _tadabburItems.map((t) => t.toJson()).toList(),
+      if (includeTadbeer) ...{
+        'tadbeer': _tadbeerItems.map((t) => t.toJson()).toList(),
+        'tadabbur': _tadbeerItems.map((t) => t.toJson()).toList(),
+      },
     };
   }
 

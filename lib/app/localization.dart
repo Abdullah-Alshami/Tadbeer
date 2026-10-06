@@ -51,14 +51,19 @@ class AppStrings {
       isArabic ? 'سورة $surahName · ص $page' : 'Surah $surahName · p. $page';
   String get quickActions => isArabic ? 'الأقسام الرئيسية' : 'Main Sections';
 
-  // Tadabbur Intro
-  String get tadabburVerse =>
+  // Tadbeer Intro
+  String get tadbeerVerse =>
       'أَفَلَا يَتَدَبَّرُونَ الْقُرْآنَ أَمْ عَلَىٰ قُلُوبٍ أَقْفَالُهَا';
-  String get tadabburVerseRef =>
+  String get tadbeerVerseRef =>
       isArabic ? 'سورة محمد · آية ٢٤' : 'Surah Muhammad · Verse 24';
-  String get tadabburMessage => isArabic
+  String get tadbeerMessage => isArabic
       ? 'تَدْبِير هو رفيقك الهادئ لقراءة كتاب الله وتأمّل آياته، بدون إعلانات أو اتّصال بالإنترنت، وتبقى بياناتك على جهازك فقط.'
       : 'Tadbeer is your calm companion for reading and reflecting upon the Quran, offline and private on your device.';
+
+  /// Backward compatibility aliases
+  String get tadabburVerse => tadbeerVerse;
+  String get tadabburVerseRef => tadbeerVerseRef;
+  String get tadabburMessage => tadbeerMessage;
   String get continueToApp =>
       isArabic ? 'متابعة إلى التطبيق' : 'Continue to Tadbeer';
   String get hideIntroPermanently => isArabic
@@ -177,7 +182,7 @@ class AppStrings {
       : 'No ayahs added to this link yet';
   String get ayahLinksSubtitle => isArabic
       ? 'خريطة شخصية لربط الآيات واستكشاف العلاقات التدبرية'
-      : 'Personal maps connecting verses explored during Tadabbur';
+      : 'Personal maps connecting verses explored during Tadbeer';
   String versesCount(int count) => isArabic ? '$count آيات' : '$count Verses';
   String linksCount(int count) => isArabic ? '$count روابط' : '$count Links';
 
@@ -219,7 +224,7 @@ class AppStrings {
   String get fontSize => isArabic ? 'حجم خط المصحف' : 'Quran Font Size';
   String get aboutContent => isArabic
       ? 'تَدْبِير هو تطبيق قرآني هادف تم بناؤه لخدمة تلاوة وتدبّر القرآن الكريم.\nيعمل محليًا دون إنترنت وبخصوصية تامة بدون إعلانات أو تتبع.\nالنص القرآني معتمد وموثق من مشروع تنزيل (Tanzil Project).'
-      : 'Tadbeer is an offline-first Quran reading and tadabbur application.\nBuilt with complete privacy, no internet required, no ads, and no tracking.\nQuran text is verified from the Tanzil Project under CC-BY 3.0.';
+      : 'Tadbeer is an offline-first Quran reading and tadbeer application.\nBuilt with complete privacy, no internet required, no ads, and no tracking.\nQuran text is verified from the Tanzil Project under CC-BY 3.0.';
 }
 
 class AppLocalizationScope extends InheritedWidget {

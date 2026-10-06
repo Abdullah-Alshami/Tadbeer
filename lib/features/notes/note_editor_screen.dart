@@ -8,7 +8,7 @@ import '../../core/utils/note_pdf_exporter.dart';
 import '../../data/notes/note_model.dart';
 import '../../data/quran/quran_repository.dart';
 
-/// Full-screen, comfortable Arabic note editor for long-form tadabbur reflections.
+/// Full-screen, comfortable Arabic note editor for long-form tadbeer reflections.
 class NoteEditorScreen extends StatefulWidget {
   final NoteItem? existingNote;
 

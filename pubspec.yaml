@@ -1,5 +1,5 @@
 name: tadbeer
-description: "تَدْبِير (Tadbeer) — Offline-first Quran Reading & Tadabbur Application"
+description: "تَدْبِير (Tadbeer) — Offline-first Quran Reading & Tadbeer Application"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -45,6 +45,7 @@ dependencies:
   sqflite_common: ^2.5.13+1
   sqflite_common_ffi: ^2.4.3
   path: ^1.9.1
+  mushaf_text: ^1.4.0
 
 dev_dependencies:
   flutter_test:

@@ -382,7 +382,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
                     ),
                   const SizedBox(height: 12),
 
-                  // Reflection note (if any, from link, note or tadabbur)
+                  // Reflection note (if any, from link, note or tadbeer)
                   () {
                     final effectiveNote = verse.getEffectiveNote();
                     if (effectiveNote != null && effectiveNote.isNotEmpty) {

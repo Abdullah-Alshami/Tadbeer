@@ -1,4 +1,4 @@
-/// Represents a user's reflective Tadabbur Pause session for an individual Ayah.
+/// Represents a user's reflective Tadbeer Pause session for an individual Ayah.
 ///
 /// EDUCATIONAL NOTE:
 /// Tadbeer encourages contemplation (تدبر) through 4 targeted guiding questions:
@@ -12,7 +12,7 @@
 /// - Re-opens with previous answers populated for that Ayah.
 /// - Empty answers are never stored.
 /// - Unifies seamlessly with the Ayah Links network and notes display.
-class TadabburItem {
+class TadbeerItem {
   final String id;
   final int surahNumber;
   final int ayahNumber;
@@ -21,7 +21,7 @@ class TadabburItem {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const TadabburItem({
+  const TadbeerItem({
     required this.id,
     required this.surahNumber,
     required this.ayahNumber,
@@ -33,7 +33,7 @@ class TadabburItem {
 
   String get ayahKey => '$surahNumber:$ayahNumber';
 
-  /// The 4 authentic guiding questions for Tadabbur
+  /// The 4 authentic guiding questions for Tadbeer
   static const List<String> questions = [
     'ما الذي لفت انتباهك في هذه الآية؟',
     'ماذا فهمت من الآية؟',
@@ -66,7 +66,7 @@ class TadabburItem {
     'updatedAt': updatedAt.toIso8601String(),
   };
 
-  factory TadabburItem.fromJson(Map<String, dynamic> json) {
+  factory TadbeerItem.fromJson(Map<String, dynamic> json) {
     final rawAnswers = json['answers'] as Map<String, dynamic>? ?? {};
     final parsedAnswers = <int, String>{};
     for (final entry in rawAnswers.entries) {
@@ -75,7 +75,7 @@ class TadabburItem {
         parsedAnswers[key] = entry.value as String;
       }
     }
-    return TadabburItem(
+    return TadbeerItem(
       id: json['id'] as String,
       surahNumber: json['surahNumber'] as int,
       ayahNumber: json['ayahNumber'] as int,
@@ -86,8 +86,8 @@ class TadabburItem {
     );
   }
 
-  TadabburItem copyWith({Map<int, String>? answers, DateTime? updatedAt}) {
-    return TadabburItem(
+  TadbeerItem copyWith({Map<int, String>? answers, DateTime? updatedAt}) {
+    return TadbeerItem(
       id: id,
       surahNumber: surahNumber,
       ayahNumber: ayahNumber,
@@ -98,3 +98,6 @@ class TadabburItem {
     );
   }
 }
+
+/// Backward compatibility typedef
+typedef TadabburItem = TadbeerItem;

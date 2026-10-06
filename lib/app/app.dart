@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/storage/user_data_store.dart';
 import '../features/home/home_screen.dart';
-import '../features/home/tadabbur_intro_screen.dart';
+import '../features/home/tadbeer_intro_screen.dart';
 import 'localization.dart';
 import 'theme.dart';
 
@@ -30,7 +30,7 @@ class _TadbeerAppState extends State<TadbeerApp> {
     final savedCode = UserDataStore.instance.settings.languageCode;
     _currentLanguage = AppLanguage.fromCode(savedCode);
     _initialHideIntro =
-        UserDataStore.instance.settings.hideTadabburIntroPermanently;
+        UserDataStore.instance.settings.hideTadbeerIntroPermanently;
   }
 
   void _onLanguageChanged(AppLanguage newLang) {
@@ -59,7 +59,7 @@ class _TadbeerAppState extends State<TadbeerApp> {
             themeMode: settings.themeMode,
             home: _initialHideIntro
                 ? const HomeScreen()
-                : const TadabburIntroScreen(),
+                : const TadbeerIntroScreen(),
           ),
         );
       },

@@ -9,7 +9,7 @@ import 'package:tadbeer/data/ayah_links/ayah_link_model.dart';
 import 'package:tadbeer/data/bookmarks/bookmark_model.dart';
 import 'package:tadbeer/data/highlights/highlight_model.dart';
 import 'package:tadbeer/data/notes/note_model.dart';
-import 'package:tadbeer/data/quran/tadabbur_model.dart';
+import 'package:tadbeer/data/quran/tadbeer_model.dart';
 import 'package:tadbeer/data/reading_position/reading_position_model.dart';
 import 'package:tadbeer/data/reminders/reminder_model.dart';
 
@@ -182,8 +182,8 @@ void main() {
       expect(links.isEmpty, isTrue);
     });
 
-    test('Tadabbur Answers CRUD operations', () async {
-      final tadabbur = TadabburItem(
+    test('Tadbeer Answers CRUD operations', () async {
+      final tadbeer = TadbeerItem(
         id: '1:1',
         surahNumber: 1,
         ayahNumber: 1,
@@ -195,14 +195,14 @@ void main() {
         createdAt: DateTime(2026, 10, 6),
         updatedAt: DateTime(2026, 10, 6),
       );
-      await db.insertOrUpdateTadabbur(tadabbur);
+      await db.insertOrUpdateTadbeer(tadbeer);
 
-      var items = await db.loadTadabburItems();
+      var items = await db.loadTadbeerItems();
       expect(items.length, equals(1));
       expect(items.first.answers[1], equals('بداية بالرحمة والإحسان'));
 
-      await db.deleteTadabbur('1:1');
-      items = await db.loadTadabburItems();
+      await db.deleteTadbeer('1:1');
+      items = await db.loadTadbeerItems();
       expect(items.isEmpty, isTrue);
     });
 
@@ -210,7 +210,7 @@ void main() {
       const settings = UserSettings(
         themeMode: ThemeMode.dark,
         languageCode: 'ar',
-        hideTadabburIntroPermanently: true,
+        hideTadbeerIntroPermanently: true,
       );
       await db.saveSettings(settings);
 

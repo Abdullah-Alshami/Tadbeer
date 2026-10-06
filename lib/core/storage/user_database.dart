@@ -11,7 +11,7 @@ import '../../data/ayah_links/ayah_link_model.dart';
 import '../../data/bookmarks/bookmark_model.dart';
 import '../../data/highlights/highlight_model.dart';
 import '../../data/notes/note_model.dart';
-import '../../data/quran/tadabbur_model.dart';
+import '../../data/quran/tadbeer_model.dart';
 import '../../data/reading_position/reading_position_model.dart';
 import '../../data/reminders/reminder_model.dart';
 import 'user_settings_model.dart';
@@ -24,7 +24,7 @@ import 'user_settings_model.dart';
 /// - Bookmarks
 /// - Highlights
 /// - Reading Position
-/// - Tadabbur Answers
+/// - Tadbeer Answers
 /// - Verse Links
 /// - Reminders
 /// - Settings
@@ -148,7 +148,16 @@ class UserDatabase {
       )
     ''');
 
-    // 7. Tadabbur Answers Table
+    // 7. Tadbeer Answers Table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS tadbeer_items (
+        id TEXT PRIMARY KEY,
+        surah_number INTEGER NOT NULL,
+        ayah_number INTEGER NOT NULL,
+        data TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
     await db.execute('''
       CREATE TABLE IF NOT EXISTS tadabbur_items (
         id TEXT PRIMARY KEY,
@@ -424,49 +433,76 @@ class UserDatabase {
     }
   }
 
-  // ==================== TADABBUR ANSWERS ====================
+  // ==================== TADBEER ANSWERS ====================
 
-  Future<List<TadabburItem>> loadTadabburItems() async {
+  Future<List<TadbeerItem>> loadTadbeerItems() async {
     if (!isOpen) return [];
     try {
-      final rows = await db.query('tadabbur_items', orderBy: 'updated_at DESC');
+      var rows = await db.query('tadbeer_items', orderBy: 'updated_at DESC');
+      if (rows.isEmpty) {
+        final legacyRows = await db.query('tadabbur_items', orderBy: 'updated_at DESC');
+        if (legacyRows.isNotEmpty) {
+          rows = legacyRows;
+        }
+      }
       return rows.map((r) {
         final data = jsonDecode(r['data'] as String) as Map<String, dynamic>;
-        return TadabburItem.fromJson(data);
+        return TadbeerItem.fromJson(data);
       }).toList();
     } catch (e) {
-      debugPrint('UserDatabase.loadTadabburItems: $e');
+      debugPrint('UserDatabase.loadTadbeerItems: $e');
       return [];
     }
   }
 
-  Future<void> insertOrUpdateTadabbur(TadabburItem item) async {
+  /// Backward compatibility alias
+  Future<List<TadbeerItem>> loadTadabburItems() => loadTadbeerItems();
+
+  Future<void> insertOrUpdateTadbeer(TadbeerItem item) async {
     if (!isOpen) return;
     try {
+      final values = {
+        'id': item.id,
+        'surah_number': item.surahNumber,
+        'ayah_number': item.ayahNumber,
+        'data': jsonEncode(item.toJson()),
+        'updated_at': item.updatedAt.toIso8601String(),
+      };
       await db.insert(
-        'tadabbur_items',
-        {
-          'id': item.id,
-          'surah_number': item.surahNumber,
-          'ayah_number': item.ayahNumber,
-          'data': jsonEncode(item.toJson()),
-          'updated_at': item.updatedAt.toIso8601String(),
-        },
+        'tadbeer_items',
+        values,
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
+      try {
+        await db.insert(
+          'tadabbur_items',
+          values,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      } catch (_) {}
     } catch (e) {
-      debugPrint('UserDatabase.insertOrUpdateTadabbur: $e');
+      debugPrint('UserDatabase.insertOrUpdateTadbeer: $e');
     }
   }
 
-  Future<void> deleteTadabbur(String id) async {
+  /// Backward compatibility alias
+  Future<void> insertOrUpdateTadabbur(TadbeerItem item) =>
+      insertOrUpdateTadbeer(item);
+
+  Future<void> deleteTadbeer(String id) async {
     if (!isOpen) return;
     try {
-      await db.delete('tadabbur_items', where: 'id = ?', whereArgs: [id]);
+      await db.delete('tadbeer_items', where: 'id = ?', whereArgs: [id]);
+      try {
+        await db.delete('tadabbur_items', where: 'id = ?', whereArgs: [id]);
+      } catch (_) {}
     } catch (e) {
-      debugPrint('UserDatabase.deleteTadabbur: $e');
+      debugPrint('UserDatabase.deleteTadbeer: $e');
     }
   }
+
+  /// Backward compatibility alias
+  Future<void> deleteTadabbur(String id) => deleteTadbeer(id);
 
   // ==================== USER SETTINGS ====================
 
@@ -521,7 +557,10 @@ class UserDatabase {
       await db.delete('highlights');
       await db.delete('reminders');
       await db.delete('ayah_links');
-      await db.delete('tadabbur_items');
+      await db.delete('tadbeer_items');
+      try {
+        await db.delete('tadabbur_items');
+      } catch (_) {}
       await db.delete('user_settings');
     } catch (e) {
       debugPrint('UserDatabase.clearAllUserData: $e');

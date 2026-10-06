@@ -11,13 +11,13 @@ import '../../data/notes/note_model.dart';
 import '../../data/quran/quran_models.dart';
 import '../../data/quran/quran_repository.dart';
 import '../../features/ayah_links/widgets/ayah_link_picker_dialog.dart';
-import '../../features/quran/widgets/tadabbur_pause_sheet.dart';
+import '../../features/quran/widgets/tadbeer_pause_sheet.dart';
 
 /// Modal action sheet for interacting with an individual Ayah.
 ///
 /// EDUCATIONAL NOTE:
 /// Offers quick actions:
-/// 1. Tadabbur reflection note (linked to this ayah via stable ID)
+/// 1. Tadbeer reflection note (linked to this ayah via stable ID)
 /// 2. Bookmark toggle (pinning verse for recitation)
 /// 3. Color highlight (4 calm, non-distracting colors)
 /// 4. Copying authentic Quranic verse with reference
@@ -393,7 +393,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                   ),
                 ),
               ] else ...[
-                // Main Actions Row: Tadabbur Pause, Ayah Links, Note, Bookmark, Highlight, Copy
+                // Main Actions Row: Tadbeer Pause, Ayah Links, Note, Bookmark, Highlight, Copy
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 12,
@@ -404,19 +404,19 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // Tadabbur Pause action
+                        // Tadbeer Pause action
                         _ActionButton(
                           icon: Icons.spa_outlined,
                           label: 'وقفة تدبر',
                           hasActiveIndicator:
-                              storage.getTadabbur(
+                              storage.getTadbeer(
                                 widget.ayah.surahNumber,
                                 widget.ayah.ayahNumber,
                               ) !=
                               null,
                           onTap: () {
                             Navigator.of(context).pop();
-                            TadabburPauseSheet.show(context, widget.ayah);
+                            TadbeerPauseSheet.show(context, widget.ayah);
                           },
                         ),
 

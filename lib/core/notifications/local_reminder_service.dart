@@ -5,7 +5,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../data/reminders/reminder_model.dart';
 
-/// Local offline reminder service for Quran recitation and tadabbur alarms.
+/// Local offline reminder service for Quran recitation and tadbeer alarms.
 ///
 /// EDUCATIONAL NOTE:
 /// This service is 100% offline. Notifications are scheduled directly with the

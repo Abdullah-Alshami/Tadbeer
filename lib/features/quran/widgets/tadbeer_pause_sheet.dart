@@ -5,9 +5,9 @@ import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
 import '../../../data/quran/quran_models.dart';
 import '../../../data/quran/quran_repository.dart';
-import '../../../data/quran/tadabbur_model.dart';
+import '../../../data/quran/tadbeer_model.dart';
 
-/// Modal sheet for "🌿 وقفة تدبر" (Tadabbur Pause).
+/// Modal sheet for "🌿 وقفة تدبر" (Tadbeer Pause).
 ///
 /// EDUCATIONAL NOTE:
 /// Offers a focused, contemplative pause directly on an Ayah:
@@ -15,26 +15,29 @@ import '../../../data/quran/tadabbur_model.dart';
 /// - The user can skip, write, or save at any point without obligation to finish all questions.
 /// - Empty answers are never stored.
 /// - Preserves answers across sessions via stable Ayah ID.
-class TadabburPauseSheet extends StatefulWidget {
+class TadbeerPauseSheet extends StatefulWidget {
   final Ayah ayah;
 
-  const TadabburPauseSheet({super.key, required this.ayah});
+  const TadbeerPauseSheet({super.key, required this.ayah});
 
-  /// Displays the Tadabbur Pause sheet as a modal bottom sheet.
+  /// Displays the Tadbeer Pause sheet as a modal bottom sheet.
   static Future<void> show(BuildContext context, Ayah ayah) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => TadabburPauseSheet(ayah: ayah),
+      builder: (ctx) => TadbeerPauseSheet(ayah: ayah),
     );
   }
 
   @override
-  State<TadabburPauseSheet> createState() => _TadabburPauseSheetState();
+  State<TadbeerPauseSheet> createState() => _TadbeerPauseSheetState();
 }
 
-class _TadabburPauseSheetState extends State<TadabburPauseSheet> {
+/// Backward compatibility alias
+typedef TadabburPauseSheet = TadbeerPauseSheet;
+
+class _TadbeerPauseSheetState extends State<TadbeerPauseSheet> {
   int _currentQuestionIndex = 0; // 0..3 for questions 1..4
   final Map<int, TextEditingController> _controllers = {};
   bool _isSaving = false;
@@ -43,13 +46,13 @@ class _TadabburPauseSheetState extends State<TadabburPauseSheet> {
   void initState() {
     super.initState();
     // Load existing answers if user previously reflected on this ayah
-    final existingTadabbur = UserDataStore.instance.getTadabbur(
+    final existingTadbeer = UserDataStore.instance.getTadbeer(
       widget.ayah.surahNumber,
       widget.ayah.ayahNumber,
     );
 
-    for (int i = 1; i <= TadabburItem.questions.length; i++) {
-      final initialText = existingTadabbur?.answers[i] ?? '';
+    for (int i = 1; i <= TadbeerItem.questions.length; i++) {
+      final initialText = existingTadbeer?.answers[i] ?? '';
       _controllers[i] = TextEditingController(text: initialText);
     }
   }
@@ -74,7 +77,7 @@ class _TadabburPauseSheetState extends State<TadabburPauseSheet> {
       }
     });
 
-    await UserDataStore.instance.saveTadabbur(
+    await UserDataStore.instance.saveTadbeer(
       surahNumber: widget.ayah.surahNumber,
       ayahNumber: widget.ayah.ayahNumber,
       ayahId: widget.ayah.id,
@@ -100,7 +103,7 @@ class _TadabburPauseSheetState extends State<TadabburPauseSheet> {
   }
 
   void _nextQuestion() {
-    if (_currentQuestionIndex < TadabburItem.questions.length - 1) {
+    if (_currentQuestionIndex < TadbeerItem.questions.length - 1) {
       setState(() {
         _currentQuestionIndex++;
       });
@@ -122,7 +125,7 @@ class _TadabburPauseSheetState extends State<TadabburPauseSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surah = QuranRepository.instance.getSurah(widget.ayah.surahNumber);
     final questionNumber = _currentQuestionIndex + 1;
-    final currentQuestion = TadabburItem.questions[_currentQuestionIndex];
+    final currentQuestion = TadbeerItem.questions[_currentQuestionIndex];
     final activeController = _controllers[questionNumber]!;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
@@ -271,7 +274,7 @@ class _TadabburPauseSheetState extends State<TadabburPauseSheet> {
                       ),
                     ),
                     Row(
-                      children: List.generate(TadabburItem.questions.length, (
+                      children: List.generate(TadbeerItem.questions.length, (
                         idx,
                       ) {
                         final isCurrent = idx == _currentQuestionIndex;
@@ -404,14 +407,14 @@ class _TadabburPauseSheetState extends State<TadabburPauseSheet> {
                         ),
                         icon: Icon(
                           _currentQuestionIndex <
-                                  TadabburItem.questions.length - 1
+                                  TadbeerItem.questions.length - 1
                               ? Icons.arrow_back
                               : Icons.check,
                           size: 16,
                         ),
                         label: Text(
                           _currentQuestionIndex <
-                                  TadabburItem.questions.length - 1
+                                  TadbeerItem.questions.length - 1
                               ? 'التالي'
                               : 'تم وحفظ',
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -423,7 +426,7 @@ class _TadabburPauseSheetState extends State<TadabburPauseSheet> {
                 const SizedBox(height: 10),
 
                 // Save & finish at any stage button
-                if (_currentQuestionIndex < TadabburItem.questions.length - 1)
+                if (_currentQuestionIndex < TadbeerItem.questions.length - 1)
                   Center(
                     child: TextButton.icon(
                       onPressed: _saveAndClose,

@@ -6,7 +6,7 @@ import 'package:tadbeer/app/app.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
 import 'package:tadbeer/data/quran/quran_repository.dart';
 import 'package:tadbeer/features/home/home_screen.dart';
-import 'package:tadbeer/features/home/tadabbur_intro_screen.dart';
+import 'package:tadbeer/features/home/tadbeer_intro_screen.dart';
 import 'package:tadbeer/features/notes/note_editor_screen.dart';
 import 'package:tadbeer/features/notes/notes_screen.dart';
 import 'package:tadbeer/features/quran/quran_screen.dart';
@@ -36,8 +36,8 @@ void main() {
         await tester.pumpWidget(const TadbeerApp());
         await tester.pumpAndSettle();
 
-        // Should show TadabburIntroScreen
-        expect(find.byType(TadabburIntroScreen), findsOneWidget);
+        // Should show TadbeerIntroScreen
+        expect(find.byType(TadbeerIntroScreen), findsOneWidget);
         // Should show checkbox "لا تظهر لي هذه النافذة مرة أخرى" (default: false)
         final checkboxTextFinder = find.text('لا تظهر لي هذه النافذة مرة أخرى');
         expect(checkboxTextFinder, findsOneWidget);
@@ -56,7 +56,7 @@ void main() {
 
         expect(find.byType(HomeScreen), findsOneWidget);
         expect(
-          UserDataStore.instance.settings.hideTadabburIntroPermanently,
+          UserDataStore.instance.settings.hideTadbeerIntroPermanently,
           isFalse,
         );
       },
@@ -68,7 +68,7 @@ void main() {
         await tester.pumpWidget(const TadbeerApp());
         await tester.pumpAndSettle();
 
-        expect(find.byType(TadabburIntroScreen), findsOneWidget);
+        expect(find.byType(TadbeerIntroScreen), findsOneWidget);
 
         // Tap the checkbox
         final checkboxFinder = find.byType(Checkbox);
@@ -89,7 +89,7 @@ void main() {
         // Should now be on HomeScreen
         expect(find.byType(HomeScreen), findsOneWidget);
         expect(
-          UserDataStore.instance.settings.hideTadabburIntroPermanently,
+          UserDataStore.instance.settings.hideTadbeerIntroPermanently,
           isTrue,
         );
 
@@ -97,7 +97,7 @@ void main() {
         await tester.pumpWidget(const TadbeerApp());
         await tester.pumpAndSettle();
         expect(find.byType(HomeScreen), findsOneWidget);
-        expect(find.byType(TadabburIntroScreen), findsNothing);
+        expect(find.byType(TadbeerIntroScreen), findsNothing);
       },
     );
 
@@ -108,7 +108,7 @@ void main() {
       await tester.runAsync(() async {
         await UserDataStore.instance.updateSettings(
           UserDataStore.instance.settings.copyWith(
-            hideTadabburIntroPermanently: true,
+            hideTadbeerIntroPermanently: true,
           ),
         );
       });
@@ -133,7 +133,7 @@ void main() {
         await tester.runAsync(() async {
           await UserDataStore.instance.updateSettings(
             UserDataStore.instance.settings.copyWith(
-              hideTadabburIntroPermanently: true,
+              hideTadbeerIntroPermanently: true,
             ),
           );
         });
@@ -176,7 +176,7 @@ void main() {
       await tester.runAsync(() async {
         await UserDataStore.instance.updateSettings(
           UserDataStore.instance.settings.copyWith(
-            hideTadabburIntroPermanently: true,
+            hideTadbeerIntroPermanently: true,
           ),
         );
       });

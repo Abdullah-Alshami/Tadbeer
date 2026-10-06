@@ -37,11 +37,14 @@ class UserSettings {
   final ThemeMode themeMode;
   final String languageCode;
 
-  /// Whether the user has chosen to permanently dismiss the Tadabbur Intro.
+  /// Whether the user has chosen to permanently dismiss the Tadbeer Intro.
   /// IMPORTANT:
   /// Once set to true, the introduction is NEVER shown again, and no option
   /// is provided to re-enable it, as specified in the Tadbeer requirements.
-  final bool hideTadabburIntroPermanently;
+  final bool hideTadbeerIntroPermanently;
+
+  /// Backward compatibility getter
+  bool get hideTadabburIntroPermanently => hideTadbeerIntroPermanently;
 
   final QuranFontSizeOption quranFontOption;
   final double ayahLinkFontSize;
@@ -49,10 +52,12 @@ class UserSettings {
   const UserSettings({
     this.themeMode = ThemeMode.light,
     this.languageCode = 'ar',
-    this.hideTadabburIntroPermanently = false,
+    bool hideTadbeerIntroPermanently = false,
+    bool? hideTadabburIntroPermanently,
     this.quranFontOption = QuranFontSizeOption.medium,
     this.ayahLinkFontSize = 18.0,
-  });
+  }) : hideTadbeerIntroPermanently =
+            hideTadabburIntroPermanently ?? hideTadbeerIntroPermanently;
 
   /// Backward compatibility getter returning the effective font size in points.
   double get quranFontSize => quranFontOption.fontSize;
@@ -60,7 +65,8 @@ class UserSettings {
   Map<String, dynamic> toJson() => {
     'themeMode': themeMode.name,
     'languageCode': languageCode,
-    'hideTadabburIntroPermanently': hideTadabburIntroPermanently,
+    'hideTadbeerIntroPermanently': hideTadbeerIntroPermanently,
+    'hideTadabburIntroPermanently': hideTadbeerIntroPermanently,
     'quranFontOption': quranFontOption.name,
     'quranFontSize': quranFontSize,
     'ayahLinkFontSize': ayahLinkFontSize,
@@ -100,8 +106,10 @@ class UserSettings {
     return UserSettings(
       themeMode: mode,
       languageCode: json['languageCode'] as String? ?? 'ar',
-      hideTadabburIntroPermanently:
-          json['hideTadabburIntroPermanently'] as bool? ?? false,
+      hideTadbeerIntroPermanently:
+          json['hideTadbeerIntroPermanently'] as bool? ??
+          json['hideTadabburIntroPermanently'] as bool? ??
+          false,
       quranFontOption: fontOpt,
       ayahLinkFontSize: (json['ayahLinkFontSize'] as num?)?.toDouble() ?? 18.0,
     );
@@ -110,6 +118,7 @@ class UserSettings {
   UserSettings copyWith({
     ThemeMode? themeMode,
     String? languageCode,
+    bool? hideTadbeerIntroPermanently,
     bool? hideTadabburIntroPermanently,
     QuranFontSizeOption? quranFontOption,
     double? quranFontSize,
@@ -130,8 +139,10 @@ class UserSettings {
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
       languageCode: languageCode ?? this.languageCode,
-      hideTadabburIntroPermanently:
-          hideTadabburIntroPermanently ?? this.hideTadabburIntroPermanently,
+      hideTadbeerIntroPermanently:
+          hideTadbeerIntroPermanently ??
+          hideTadabburIntroPermanently ??
+          this.hideTadbeerIntroPermanently,
       quranFontOption: resolvedOption,
       ayahLinkFontSize: ayahLinkFontSize ?? this.ayahLinkFontSize,
     );

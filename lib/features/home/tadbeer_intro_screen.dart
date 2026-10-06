@@ -16,18 +16,21 @@ import 'home_screen.dart';
 ///
 /// هنا أضع آية مرتبطة بالتدبر، وأعطي المستخدم خيار
 /// إخفاء شاشة الترحيب نهائيًا.
-class TadabburIntroScreen extends StatefulWidget {
-  const TadabburIntroScreen({super.key});
+class TadbeerIntroScreen extends StatefulWidget {
+  const TadbeerIntroScreen({super.key});
 
   @override
-  State<TadabburIntroScreen> createState() => _TadabburIntroScreenState();
+  State<TadbeerIntroScreen> createState() => _TadbeerIntroScreenState();
 }
 
-class _TadabburIntroScreenState extends State<TadabburIntroScreen> {
+/// Compatibility alias
+typedef TadabburIntroScreen = TadbeerIntroScreen;
+
+class _TadbeerIntroScreenState extends State<TadbeerIntroScreen> {
   // هنا خزنت أرقام السور والآيات التي أريد استخدامها في شاشة الترحيب.
   // الرقم الأول = رقم السورة
   // الرقم الثاني = رقم الآية
-  static const List<(int, int)> _tadabburAyahRefs = [
+  static const List<(int, int)> _tadbeerAyahRefs = [
     (47, 24),
     (4, 82),
     (38, 29),
@@ -55,7 +58,7 @@ class _TadabburIntroScreenState extends State<TadabburIntroScreen> {
     // بعد الاختيار تبقى نفس الآية طالما الشاشة مفتوحة.
     final random = Random();
 
-    _chosenRef = _tadabburAyahRefs[random.nextInt(_tadabburAyahRefs.length)];
+    _chosenRef = _tadbeerAyahRefs[random.nextInt(_tadbeerAyahRefs.length)];
   }
 
   // هذه الدالة تعمل عندما أضغط على زر "متابعة".
@@ -70,7 +73,7 @@ class _TadabburIntroScreenState extends State<TadabburIntroScreen> {
 
       // أحفظ فقط أن شاشة الترحيب لا تظهر مرة أخرى.
       await UserDataStore.instance.updateSettings(
-        settings.copyWith(hideTadabburIntroPermanently: true),
+        settings.copyWith(hideTadbeerIntroPermanently: true),
       );
     }
 
@@ -111,13 +114,13 @@ class _TadabburIntroScreenState extends State<TadabburIntroScreen> {
     }
 
     // إذا وجدت الآية أستخدمها، وإذا لم أجدها أستخدم النص الاحتياطي.
-    final verseText = currentAyah?.text ?? l10n.tadabburVerse;
+    final verseText = currentAyah?.text ?? l10n.tadbeerVerse;
 
     // أجهز اسم السورة ورقم الآية حتى أعرضهما تحت النص.
     final verseRef = (currentSurah != null && currentAyah != null)
         ? 'سورة ${currentSurah.name} · الآية '
               '${ArabicSearchNormalizer.toArabicDigits(currentAyah.ayahNumber)}'
-        : l10n.tadabburVerseRef;
+        : l10n.tadbeerVerseRef;
 
     return Directionality(
       // اتجاه الشاشة يتغير حسب اللغة.
@@ -285,7 +288,7 @@ class _TadabburIntroScreenState extends State<TadabburIntroScreen> {
 
                     // الرسالة التي تشرح فكرة التدبر للمستخدم.
                     Text(
-                      l10n.tadabburMessage,
+                      l10n.tadbeerMessage,
                       textAlign: TextAlign.center,
 
                       style: TextStyle(
