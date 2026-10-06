@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/ayah_links/ayah_link_model.dart';
-import '../../data/ayah_links/ayah_link_repository.dart';
+import '../../features/ayah_links/ayah_link_model.dart';
+import '../../features/ayah_links/ayah_link_repository.dart';
 import 'views/ayah_link_cards_view.dart';
 import 'views/ayah_link_network_view.dart';
 import 'views/ayah_link_ordered_view.dart';
@@ -85,7 +85,7 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('تم حذف رابط «${link.title}»'),
-            backgroundColor: AppColors.olive,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -208,7 +208,7 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
                         min: 14.0,
                         max: 28.0,
                         divisions: 7,
-                        activeColor: AppColors.olive,
+                        activeColor: Theme.of(context).colorScheme.primary,
                         onChanged: (val) {
                           setSheetState(() => tempSize = val);
                           UserDataStore.instance.updateSettings(
@@ -221,9 +221,7 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.darkBackground
-                              : AppColors.comsilk,
+                          color: AppColors.surface(context),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -265,15 +263,13 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.olive
-              : (isDark ? AppColors.darkBackground : AppColors.comsilk),
+              ? Theme.of(context).colorScheme.primary
+              : AppColors.surface(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
-                ? AppColors.olive
-                : (isDark
-                      ? AppColors.darkSurfaceVariant
-                      : const Color(0xFFDDD7C8)),
+                ? Theme.of(context).colorScheme.primary
+                : AppColors.border(context),
           ),
         ),
         child: Text(
@@ -283,7 +279,9 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
             fontWeight: FontWeight.bold,
             color: isSelected
                 ? Colors.white
-                : (isDark ? AppColors.comsilk : AppColors.oliveDark),
+                : (isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightPrimaryDark),
           ),
         ),
       ),
@@ -452,7 +450,7 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
             ),
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () => _openAddVerse(link),
-              backgroundColor: AppColors.olive,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
               label: Text(l10n.addVerse),
@@ -486,7 +484,9 @@ class _ViewTabButton extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.olive : Colors.transparent,
+          color: isActive
+              ? Theme.of(context).colorScheme.primary
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -495,7 +495,9 @@ class _ViewTabButton extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: isActive ? Colors.white : AppColors.olive,
+              color: isActive
+                  ? Colors.white
+                  : Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 6),
             Text(

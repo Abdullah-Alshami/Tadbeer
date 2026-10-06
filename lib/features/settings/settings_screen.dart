@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../backup/backup_screen.dart';
 import '../reminders/reminders_screen.dart';
@@ -33,15 +33,15 @@ class SettingsScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               children: [
                 // 1. المظهر (Appearance)
-                _buildSectionHeader(l10n.appearance),
+                _buildSectionHeader(context, l10n.appearance),
                 _buildCard(
-                  isDark: isDark,
+                  context: context,
                   child: Column(
                     children: [
                       ListTile(
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.brightness_medium_outlined,
-                          color: AppColors.olive,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                         title: Text(
                           l10n.themeMode,
@@ -95,9 +95,7 @@ class SettingsScreen extends StatelessWidget {
                             Icon(
                               Icons.remove_red_eye_outlined,
                               size: 20,
-                              color: isDark
-                                  ? AppColors.oliveSoft
-                                  : AppColors.olive,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -121,9 +119,9 @@ class SettingsScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // 2. القراءة ومصحف المدينة
-                _buildSectionHeader(l10n.readingSettings),
+                _buildSectionHeader(context, l10n.readingSettings),
                 _buildCard(
-                  isDark: isDark,
+                  context: context,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -131,12 +129,13 @@ class SettingsScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.olive.withValues(alpha: 0.12),
+                            color: Theme.of(context).colorScheme.primary
+                                .withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.menu_book_rounded,
-                            color: AppColors.olive,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 22,
                           ),
                         ),
@@ -173,18 +172,19 @@ class SettingsScreen extends StatelessWidget {
 
                 // 3. التطبيق (Application)
                 _buildSectionHeader(
+                  context,
                   context.currentLanguage == AppLanguage.arabic
                       ? 'التطبيق'
                       : 'Application',
                 ),
                 _buildCard(
-                  isDark: isDark,
+                  context: context,
                   child: Column(
                     children: [
                       ListTile(
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.language_outlined,
-                          color: AppColors.olive,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                         title: Text(
                           l10n.languageTitle,
@@ -228,9 +228,9 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.alarm_outlined,
-                          color: AppColors.olive,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                         title: Text(
                           l10n.reminders,
@@ -260,18 +260,19 @@ class SettingsScreen extends StatelessWidget {
 
                 // 4. البيانات (Data)
                 _buildSectionHeader(
+                  context,
                   context.currentLanguage == AppLanguage.arabic
                       ? 'البيانات'
                       : 'Data',
                 ),
                 _buildCard(
-                  isDark: isDark,
+                  context: context,
                   child: Column(
                     children: [
                       ListTile(
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.security_outlined,
-                          color: AppColors.olive,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                         title: Text(
                           l10n.backup,
@@ -324,9 +325,9 @@ class SettingsScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // 5. حول (About)
-                _buildSectionHeader(l10n.about),
+                _buildSectionHeader(context, l10n.about),
                 _buildCard(
-                  isDark: isDark,
+                  context: context,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -338,12 +339,13 @@ class SettingsScreen extends StatelessWidget {
                               width: 38,
                               height: 38,
                               decoration: BoxDecoration(
-                                color: AppColors.olive.withValues(alpha: 0.15),
+                                color: Theme.of(context).colorScheme.primary
+                                    .withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.menu_book_rounded,
-                                color: AppColors.olive,
+                                color: Theme.of(context).colorScheme.primary,
                                 size: 20,
                               ),
                             ),
@@ -358,8 +360,8 @@ class SettingsScreen extends StatelessWidget {
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: isDark
-                                        ? AppColors.comsilk
-                                        : AppColors.oliveDark,
+                                        ? AppColors.darkTextPrimary
+                                        : AppColors.lightPrimaryDark,
                                   ),
                                 ),
                                 Text(
@@ -440,37 +442,35 @@ class SettingsScreen extends StatelessWidget {
       await UserDataStore.instance.resetAllUserData();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تمت إعادة تعيين البيانات بنجاح'),
-            backgroundColor: AppColors.olive,
+          SnackBar(
+            content: const Text('تمت إعادة تعيين البيانات بنجاح'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
     }
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, right: 4, left: 4),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.bold,
-          color: AppColors.olive,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );
   }
 
-  Widget _buildCard({required Widget child, required bool isDark}) {
+  Widget _buildCard({required Widget child, required BuildContext context}) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.comsilk,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? AppColors.darkSurfaceVariant : AppColors.lightBorder,
-        ),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: child,
     );

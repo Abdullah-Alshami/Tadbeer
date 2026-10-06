@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../data/quran/quran_models.dart';
-import '../../data/quran/quran_repository.dart';
-import 'renderers/madinah_page_renderer.dart';
+import '../data/quran_models.dart';
+import '../data/quran_repository.dart';
+import '../renderers/mushaf_canvas.dart';
 
-/// Renders a single authoritative Medina Mushaf page (1..604) using [MadinahPageRenderer]
-/// based on the verified KFGQPC V4 (1441H) 15-line layout from QUL.
+/// Renders a single authoritative Medina Mushaf page (1..604) using [MushafCanvas]
+/// based on the verified 15-line layout architecture from QUL / KFGQPC Hafs.
 class QuranPageView extends StatelessWidget {
   final QuranPage? page;
   final int? pageNumber;
@@ -18,11 +18,14 @@ class QuranPageView extends StatelessWidget {
     super.key,
     this.page,
     this.pageNumber,
-    this.fontSize = 20.0,
+    this.fontSize = 18.0,
     this.selectedAyah,
     this.onAyahTap,
     this.onAyahLongPress,
-  }) : assert(page != null || pageNumber != null, 'Either page or pageNumber must be provided');
+  }) : assert(
+         page != null || pageNumber != null,
+         'Either page or pageNumber must be provided',
+       );
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +33,7 @@ class QuranPageView extends StatelessWidget {
     final repo = QuranRepository.instance;
     final pageLayout = repo.getMushafPage(pNum);
 
-    return MadinahPageRenderer(
+    return MushafCanvas(
       pageLayout: pageLayout,
       selectedAyah: selectedAyah,
       onAyahTap: onAyahTap,

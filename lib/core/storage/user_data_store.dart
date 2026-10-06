@@ -5,17 +5,19 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../data/ayah_links/ayah_link_model.dart';
-import '../../data/bookmarks/bookmark_model.dart';
-import '../../data/highlights/highlight_model.dart';
-import '../../data/notes/note_model.dart';
-import '../../data/quran/quran_models.dart';
-import '../../data/quran/tadbeer_model.dart';
-import '../../data/reading_position/reading_position_model.dart';
-import '../../data/reminders/reminder_model.dart';
+import '../../features/ayah_links/ayah_link_model.dart';
+import '../../features/bookmarks/bookmark_model.dart';
+import '../../features/highlights/highlight_model.dart';
+import '../../features/notes/note_model.dart';
+import '../../features/quran/data/quran_models.dart';
+import '../../features/tadabbur/tadbeer_model.dart';
+import '../../features/quran/data/reading_position_model.dart';
+import '../../features/reminders/reminder_model.dart';
+
 import 'package:sqflite/sqflite.dart';
+
 import 'user_database.dart';
-import 'user_settings_model.dart';
+import '../../features/settings/user_settings_model.dart';
 
 /// Central local storage coordinator for user-generated data in Tadbeer.
 ///
@@ -155,7 +157,11 @@ class UserDataStore extends ChangeNotifier {
       if (dbSettings != null) _settings = dbSettings;
 
       // Migrate from JSON file if SQLite was fresh but JSON file already exists
-      if (_notes.isEmpty && _bookmarks.isEmpty && _highlights.isEmpty && _dataFile != null && await _dataFile!.exists()) {
+      if (_notes.isEmpty &&
+          _bookmarks.isEmpty &&
+          _highlights.isEmpty &&
+          _dataFile != null &&
+          await _dataFile!.exists()) {
         await _loadFromFile();
         await _persistAllToSQLite();
       }
@@ -895,13 +901,12 @@ class UserDataStore extends ChangeNotifier {
     required int ayahNumber,
     int? ayahId,
     required Map<int, String> answers,
-  }) =>
-      saveTadbeer(
-        surahNumber: surahNumber,
-        ayahNumber: ayahNumber,
-        ayahId: ayahId,
-        answers: answers,
-      );
+  }) => saveTadbeer(
+    surahNumber: surahNumber,
+    ayahNumber: ayahNumber,
+    ayahId: ayahId,
+    answers: answers,
+  );
 
   Future<void> deleteTadbeer(int surahNumber, int ayahNumber) async {
     final key = '$surahNumber:$ayahNumber';

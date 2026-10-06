@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tadbeer/core/security/backup_crypto_service.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
-import 'package:tadbeer/data/notes/note_model.dart';
+import 'package:tadbeer/features/notes/note_model.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

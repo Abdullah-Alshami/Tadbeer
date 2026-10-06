@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/notifications/local_reminder_service.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/reminders/reminder_model.dart';
+import '../../features/reminders/reminder_model.dart';
 
 /// Reminders management screen for scheduling local Quran recitation alerts.
 ///
@@ -87,11 +87,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   ListTile(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: isDark
-                            ? AppColors.darkSurfaceVariant
-                            : const Color(0xFFDDD7C8),
-                      ),
+                      side: BorderSide(color: AppColors.border(context)),
                     ),
                     tileColor: isDark
                         ? AppColors.darkSurface
@@ -337,9 +333,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                     Icon(
                       Icons.alarm,
                       size: 64,
-                      color: isDark
-                          ? AppColors.darkSurfaceVariant
-                          : const Color(0xFFDDD7C8),
+                      color: AppColors.border(context),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -461,11 +455,7 @@ class _ReminderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.comsilk,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark
-              ? AppColors.darkSurfaceVariant
-              : const Color(0xFFDDD7C8),
-        ),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         children: [

@@ -3,7 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../../data/reminders/reminder_model.dart';
+import '../../features/reminders/reminder_model.dart';
 
 /// Local offline reminder service for Quran recitation and tadbeer alarms.
 ///

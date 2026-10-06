@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../features/ayah_links/ayah_links_screen.dart';
 import '../../features/backup/backup_screen.dart';
 import '../../features/bookmarks/bookmarks_screen.dart';
 import '../../features/highlights/highlights_screen.dart';
 import '../../features/notes/notes_screen.dart';
-import '../../features/quran/quran_screen.dart';
+import '../../features/quran/screens/quran_screen.dart';
 import '../../features/reminders/reminders_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
@@ -39,12 +39,12 @@ class AppDrawer extends StatelessWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: AppColors.olive.withValues(alpha: 0.15),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
           shape: BoxShape.circle,
         ),
-        child: const Icon(
+        child: Icon(
           Icons.menu_book_rounded,
-          color: AppColors.olive,
+          color: Theme.of(context).colorScheme.primary,
           size: 26,
         ),
       ),
@@ -53,7 +53,9 @@ class AppDrawer extends StatelessWidget {
           'تطبيق قرآني وتدبري هادئ بدون إنترنت، بدون إعلانات، وبدون تتبع. بياناتك وتدبراتك محفوظة محليًا على جهازك فقط.',
           style: TextStyle(
             fontSize: 13,
-            color: isDark ? AppColors.nightSubtitle : AppColors.daySubtitle,
+            color: isDark
+                ? AppColors.darkTextSecondary
+                : AppColors.lightTextSecondary,
           ),
         ),
       ],
@@ -64,11 +66,12 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Drawer(
       backgroundColor: isDark
           ? AppColors.darkBackground
-          : AppColors.comsilkLight,
+          : AppColors.lightBackground,
       child: SafeArea(
         child: Column(
           children: [
@@ -76,13 +79,9 @@ class AppDrawer extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : AppColors.comsilk,
+                color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
                 border: Border(
-                  bottom: BorderSide(
-                    color: isDark
-                        ? AppColors.darkSurfaceVariant
-                        : AppColors.lightBorder,
-                  ),
+                  bottom: BorderSide(color: AppColors.border(context)),
                 ),
               ),
               child: Row(
@@ -91,15 +90,15 @@ class AppDrawer extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.olive.withValues(alpha: 0.15),
+                      color: primaryColor.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.olive.withValues(alpha: 0.4),
+                        color: primaryColor.withValues(alpha: 0.4),
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.menu_book_rounded,
-                      color: AppColors.olive,
+                      color: primaryColor,
                       size: 22,
                     ),
                   ),
@@ -114,8 +113,8 @@ class AppDrawer extends StatelessWidget {
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: isDark
-                              ? AppColors.comsilk
-                              : AppColors.oliveDark,
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightPrimaryDark,
                         ),
                       ),
                       Text(
@@ -123,8 +122,8 @@ class AppDrawer extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark
-                              ? AppColors.nightSubtitle
-                              : AppColors.daySubtitle,
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
                         ),
                       ),
                     ],
@@ -231,7 +230,11 @@ class _DrawerTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: ListTile(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        leading: Icon(icon, color: AppColors.olive, size: 22),
+        leading: Icon(
+          icon,
+          color: Theme.of(context).colorScheme.primary,
+          size: 22,
+        ),
         title: Text(
           title,
           style: TextStyle(
@@ -241,9 +244,8 @@ class _DrawerTile extends StatelessWidget {
           ),
         ),
         onTap: onTap,
-        hoverColor: isDark
-            ? AppColors.darkSurfaceVariant
-            : AppColors.oliveVeryLight,
+        hoverColor: Theme.of(context).colorScheme.primary
+            .withValues(alpha: 0.1),
       ),
     );
   }

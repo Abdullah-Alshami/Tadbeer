@@ -57,7 +57,7 @@ class UserSettings {
     this.quranFontOption = QuranFontSizeOption.medium,
     this.ayahLinkFontSize = 18.0,
   }) : hideTadbeerIntroPermanently =
-            hideTadabburIntroPermanently ?? hideTadbeerIntroPermanently;
+           hideTadabburIntroPermanently ?? hideTadbeerIntroPermanently;
 
   /// Backward compatibility getter returning the effective font size in points.
   double get quranFontSize => quranFontOption.fontSize;

@@ -2,13 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/app_colors.dart';
+import '../../../app/theme.dart';
 import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
-import '../../../data/ayah_links/ayah_link_model.dart';
-import '../../../data/ayah_links/ayah_link_repository.dart';
-import '../../../data/quran/quran_repository.dart';
-import '../../quran/quran_screen.dart';
+import '../ayah_link_model.dart';
+import '../ayah_link_repository.dart';
+import '../../quran/data/quran_repository.dart';
+import '../../quran/screens/quran_screen.dart';
 
 /// Flagship interactive Network Canvas View for an Ayah Link.
 ///
@@ -248,9 +248,9 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     if (mounted) {
       _centerViewport(MediaQuery.of(context).size);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تمت إعادة الترتيب تلقائيًا'),
-          backgroundColor: AppColors.olive,
+        SnackBar(
+          content: const Text('تمت إعادة الترتيب تلقائيًا'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
           behavior: SnackBarBehavior.floating,
           duration: Duration(seconds: 2),
         ),
@@ -845,12 +845,16 @@ class _CenterThemeNode extends StatelessWidget {
       width: 200,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.comsilk,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.olive, width: 2),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary,
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.olive.withValues(alpha: 0.22),
+            color: Theme.of(context).colorScheme.primary
+                .withValues(alpha: 0.22),
             blurRadius: 18,
             offset: const Offset(0, 4),
           ),
@@ -862,7 +866,11 @@ class _CenterThemeNode extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.hub_rounded, color: AppColors.olive, size: 20),
+              Icon(
+                Icons.hub_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -874,7 +882,9 @@ class _CenterThemeNode extends StatelessWidget {
                     fontFamily: 'Amiri',
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.comsilk : AppColors.oliveDark,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightPrimaryDark,
                   ),
                 ),
               ),
@@ -884,15 +894,16 @@ class _CenterThemeNode extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: AppColors.olive.withValues(alpha: 0.15),
+              color: Theme.of(context).colorScheme.primary
+                  .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               '$versesCount آيات مرتبطة',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: AppColors.olive,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
@@ -1006,12 +1017,7 @@ class _VerseCanvasNode extends StatelessWidget {
             // Note snippet under verse (if present, compact otherwise)
             if (hasNote) ...[
               const SizedBox(height: 8),
-              Divider(
-                height: 1,
-                color: isDark
-                    ? AppColors.darkSurfaceVariant
-                    : const Color(0xFFDDD7C8),
-              ),
+              Divider(height: 1, color: AppColors.border(context)),
               const SizedBox(height: 6),
               Row(
                 children: [

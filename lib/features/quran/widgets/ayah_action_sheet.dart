@@ -3,15 +3,15 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/storage/user_data_store.dart';
-import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/notes/note_model.dart';
-import '../../data/quran/quran_models.dart';
-import '../../data/quran/quran_repository.dart';
-import '../../features/ayah_links/widgets/ayah_link_picker_dialog.dart';
-import '../../features/quran/widgets/tadbeer_pause_sheet.dart';
+import '../../../app/localization.dart';
+import '../../../app/theme.dart';
+import '../../../core/storage/user_data_store.dart';
+import '../../../core/utils/arabic_search_normalizer.dart';
+import '../../notes/note_model.dart';
+import '../data/quran_models.dart';
+import '../data/quran_repository.dart';
+import '../../ayah_links/widgets/ayah_link_picker_dialog.dart';
+import 'tadbeer_pause_sheet.dart';
 
 /// Modal action sheet for interacting with an individual Ayah.
 ///
@@ -134,12 +134,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkBackground : AppColors.comsilkLight,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? AppColors.darkSurfaceVariant
-                  : const Color(0xFFDED8CA),
-              width: 1.5,
-            ),
+            border: Border.all(color: AppColors.border(context), width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.25),
@@ -159,7 +154,9 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                   vertical: 14,
                 ),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : AppColors.comsilk,
+                  color: isDark
+                      ? AppColors.darkSurface
+                      : AppColors.lightSurface,
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(15),
                   ),
@@ -173,7 +170,9 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                         fontFamily: 'Amiri',
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.comsilk : AppColors.oliveDark,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.lightPrimaryDark,
                       ),
                     ),
                     Text(
@@ -225,7 +224,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? AppColors.oliveSoft : AppColors.olive,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -250,19 +249,17 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                           filled: true,
                           fillColor: isDark
                               ? AppColors.darkSurface
-                              : AppColors.comsilk,
+                              : AppColors.lightSurface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                             borderSide: BorderSide(
-                              color: isDark
-                                  ? AppColors.darkSurfaceVariant
-                                  : const Color(0xFFDDD7C8),
+                              color: AppColors.border(context),
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(
-                              color: AppColors.olive,
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
                               width: 1.5,
                             ),
                           ),
@@ -291,7 +288,9 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                               if (context.mounted) Navigator.of(context).pop();
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.olive,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .primary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -350,15 +349,19 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: isSelected
-                                          ? AppColors.oliveDark
+                                          ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
                                           : Colors.transparent,
                                       width: isSelected ? 3 : 1,
                                     ),
                                   ),
                                   child: isSelected
-                                      ? const Icon(
+                                      ? Icon(
                                           Icons.check,
-                                          color: AppColors.oliveDark,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
                                           size: 20,
                                         )
                                       : null,
@@ -446,7 +449,9 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                           label: isBookmarked
                               ? l10n.removeBookmark
                               : l10n.saveBookmark,
-                          iconColor: isBookmarked ? AppColors.olive : null,
+                          iconColor: isBookmarked
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
                           onTap: () async {
                             await storage.toggleBookmark(widget.ayah);
                             if (context.mounted) Navigator.of(context).pop();
@@ -518,14 +523,15 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color =
-        iconColor ?? (isDark ? AppColors.comsilk : AppColors.oliveDark);
+        iconColor ??
+        (isDark ? AppColors.darkTextPrimary : AppColors.lightPrimaryDark);
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       hoverColor: isDark
-          ? AppColors.darkSurfaceVariant
-          : AppColors.oliveVeryLight,
+          ? AppColors.darkBorder
+          : Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Column(
@@ -542,8 +548,8 @@ class _ActionButton extends StatelessWidget {
                     child: Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.olive,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
                         shape: BoxShape.circle,
                       ),
                     ),

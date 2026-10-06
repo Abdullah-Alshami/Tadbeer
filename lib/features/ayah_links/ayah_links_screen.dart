@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/ayah_links/ayah_link_model.dart';
-import '../../data/ayah_links/ayah_link_repository.dart';
-import '../../data/quran/quran_repository.dart';
+import '../../features/ayah_links/ayah_link_model.dart';
+import '../../features/ayah_links/ayah_link_repository.dart';
+import '../../features/quran/data/quran_repository.dart';
 import 'ayah_link_detail_screen.dart';
 import 'widgets/create_link_dialog.dart';
 
@@ -74,7 +74,7 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('تم حذف رابط «${link.title}»'),
-            backgroundColor: AppColors.olive,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -86,6 +86,7 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -113,10 +114,7 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
                     onChanged: (val) => setState(() => _searchQuery = val),
                     decoration: InputDecoration(
                       hintText: 'ابحث في روابط الآيات أو السور...',
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        color: AppColors.olive,
-                      ),
+                      prefixIcon: Icon(Icons.search, color: primary),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
@@ -137,17 +135,13 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: isDark
-                              ? AppColors.darkSurfaceVariant
-                              : AppColors.lightBorder,
+                          color: AppColors.border(context),
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: isDark
-                              ? AppColors.darkSurfaceVariant
-                              : AppColors.lightBorder,
+                          color: AppColors.border(context),
                         ),
                       ),
                     ),
@@ -167,15 +161,13 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
                                   width: 72,
                                   height: 72,
                                   decoration: BoxDecoration(
-                                    color: AppColors.olive.withValues(
-                                      alpha: 0.15,
-                                    ),
+                                    color: primary.withValues(alpha: 0.15),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.hub_outlined,
                                     size: 36,
-                                    color: AppColors.olive,
+                                    color: primary,
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -206,7 +198,9 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
                                   ElevatedButton.icon(
                                     onPressed: _createLink,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.olive,
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 20,
@@ -255,14 +249,10 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: isDark
-                                      ? AppColors.darkSurface
-                                      : AppColors.comsilkLight,
+                                  color: AppColors.surface(context),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: isDark
-                                        ? AppColors.darkSurfaceVariant
-                                        : AppColors.lightBorder,
+                                    color: AppColors.border(context),
                                   ),
                                   boxShadow: [
                                     BoxShadow(
@@ -286,15 +276,18 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
                                           width: 36,
                                           height: 36,
                                           decoration: BoxDecoration(
-                                            color: AppColors.olive.withValues(
-                                              alpha: 0.15,
-                                            ),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withValues(alpha: 0.15),
                                             shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(
+                                          child: Icon(
                                             Icons.hub_outlined,
                                             size: 18,
-                                            color: AppColors.olive,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -310,17 +303,21 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
                                                   fontSize: 17,
                                                   fontWeight: FontWeight.bold,
                                                   color: isDark
-                                                      ? AppColors.comsilk
-                                                      : AppColors.oliveDark,
+                                                      ? AppColors
+                                                            .darkTextPrimary
+                                                      : AppColors
+                                                            .lightPrimaryDark,
                                                 ),
                                               ),
                                               const SizedBox(height: 4),
                                               Text(
                                                 '${ArabicSearchNormalizer.toArabicDigits(link.verses.length)} آيات مرتبطة',
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.bold,
-                                                  color: AppColors.olive,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
                                                 ),
                                               ),
                                             ],
@@ -411,17 +408,20 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: AppColors.olive.withValues(
-                                                alpha: 0.12,
-                                              ),
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .withValues(alpha: 0.12),
                                               borderRadius:
                                                   BorderRadius.circular(6),
                                             ),
                                             child: Text(
                                               s.name,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 11,
-                                                color: AppColors.olive,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
                                               ),
                                             ),
                                           );
@@ -441,7 +441,7 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _createLink,
-          backgroundColor: AppColors.olive,
+          backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
           icon: const Icon(Icons.add),
           label: Text(l10n.newAyahLink),

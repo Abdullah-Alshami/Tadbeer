@@ -6,7 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
-import '../../data/notes/note_model.dart';
+import '../../features/notes/note_model.dart';
 
 /// Service for exporting an individual Tadbeer note (Ayah Note or Free Note) to PDF.
 ///

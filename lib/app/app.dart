@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/storage/user_data_store.dart';
 import '../features/home/home_screen.dart';
-import '../features/home/tadbeer_intro_screen.dart';
+import '../features/tadabbur/tadbeer_intro_screen.dart';
 import 'localization.dart';
 import 'theme.dart';
 

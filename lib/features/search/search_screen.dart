@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/notes/note_model.dart';
-import '../../data/quran/quran_models.dart';
-import '../../data/quran/quran_repository.dart';
+import '../../features/notes/note_model.dart';
+import '../../features/quran/data/quran_models.dart';
+import '../../features/quran/data/quran_repository.dart';
 import '../notes/notes_screen.dart';
-import '../quran/quran_screen.dart';
+import '../quran/screens/quran_screen.dart';
 
 /// Instant offline search across both Quranic verses and user reflection notes.
 ///
@@ -138,9 +138,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           Icon(
                             Icons.search,
                             size: 64,
-                            color: isDark
-                                ? AppColors.darkSurfaceVariant
-                                : const Color(0xFFDDD7C8),
+                            color: AppColors.border(context),
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -214,31 +212,33 @@ class _SearchScreenState extends State<SearchScreen> {
     required int count,
     required bool isDark,
   }) {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Row(
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Amiri',
             fontSize: 17,
             fontWeight: FontWeight.bold,
-            color: AppColors.olive,
+            color: primary,
           ),
         ),
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: AppColors.olive.withValues(alpha: 0.15),
+            color: primary.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             ArabicSearchNormalizer.toArabicDigits(count),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Amiri',
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: AppColors.olive,
+              color: primary,
             ),
           ),
         ),
@@ -284,16 +284,18 @@ class _SearchScreenState extends State<SearchScreen> {
                       fontFamily: 'Amiri',
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.comsilk : AppColors.oliveDark,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightPrimaryDark,
                     ),
                   ),
                   Text(
                     'ص ${ArabicSearchNormalizer.toArabicDigits(ayah.page)} · ج ${ArabicSearchNormalizer.toArabicDigits(ayah.juz)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Amiri',
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.olive,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ],
@@ -353,7 +355,9 @@ class _SearchScreenState extends State<SearchScreen> {
                       fontFamily: 'Amiri',
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.comsilk : AppColors.oliveDark,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightPrimaryDark,
                     ),
                   ),
                   Text(

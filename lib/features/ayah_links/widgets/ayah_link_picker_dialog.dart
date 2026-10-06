@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/localization.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../app/theme.dart';
 import '../../../core/storage/user_data_store.dart';
-import '../../../data/ayah_links/ayah_link_repository.dart';
-import '../../../data/quran/quran_models.dart';
-import '../../../data/quran/quran_repository.dart';
+import '../ayah_link_repository.dart';
+import '../../quran/data/quran_models.dart';
+import '../../quran/data/quran_repository.dart';
 import 'create_link_dialog.dart';
 
 /// Modal bottom sheet allowing user to link an Ayah from the Mushaf action sheet
@@ -45,7 +45,7 @@ class _AyahLinkPickerDialogState extends State<AyahLinkPickerDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تمت إضافة الآية إلى رابط «$linkTitle»'),
-          backgroundColor: AppColors.olive,
+          backgroundColor: Theme.of(context).colorScheme.primary,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -77,15 +77,11 @@ class _AyahLinkPickerDialogState extends State<AyahLinkPickerDialog> {
               maxHeight: MediaQuery.of(context).size.height * 0.7,
             ),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.comsilkLight,
+              color: AppColors.surface(context),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(20),
               ),
-              border: Border.all(
-                color: isDark
-                    ? AppColors.darkSurfaceVariant
-                    : AppColors.lightBorder,
-              ),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: SafeArea(
               child: Column(
@@ -113,9 +109,9 @@ class _AyahLinkPickerDialogState extends State<AyahLinkPickerDialog> {
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.hub_outlined,
-                              color: AppColors.olive,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -146,16 +142,17 @@ class _AyahLinkPickerDialogState extends State<AyahLinkPickerDialog> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.olive.withValues(alpha: 0.12),
+                      color: Theme.of(context).colorScheme.primary
+                          .withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       'سورة ${surah.name} · الآية ${widget.ayah.ayahNumber}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Amiri',
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.olive,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -167,20 +164,21 @@ class _AyahLinkPickerDialogState extends State<AyahLinkPickerDialog> {
                     leading: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.olive.withValues(alpha: 0.15),
+                        color: Theme.of(context).colorScheme.primary
+                            .withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.add,
-                        color: AppColors.olive,
+                        color: Theme.of(context).colorScheme.primary,
                         size: 20,
                       ),
                     ),
                     title: Text(
                       l10n.newAyahLink,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.olive,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     subtitle: const Text(
@@ -236,7 +234,7 @@ class _AyahLinkPickerDialogState extends State<AyahLinkPickerDialog> {
                                   ? Icons.check_circle_rounded
                                   : Icons.circle_outlined,
                               color: isAlreadyLinked
-                                  ? AppColors.olive
+                                  ? Theme.of(context).colorScheme.primary
                                   : Colors.grey,
                               size: 22,
                             ),
@@ -259,11 +257,13 @@ class _AyahLinkPickerDialogState extends State<AyahLinkPickerDialog> {
                               ),
                             ),
                             trailing: isAlreadyLinked
-                                ? const Text(
+                                ? Text(
                                     'مضافة بالفعل',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: AppColors.olive,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
                                     ),
                                   )
                                 : const Icon(Icons.arrow_forward_ios, size: 14),

@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
 
 import '../../core/storage/user_data_store.dart';
-import '../quran/quran_models.dart';
+import '../quran/data/quran_models.dart';
 import 'highlight_model.dart';
 
 /// Repository for managing ayah highlights with 4 calm colors.

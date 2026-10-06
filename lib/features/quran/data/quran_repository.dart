@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
-import '../../core/utils/arabic_search_normalizer.dart';
+import '../../../core/utils/arabic_search_normalizer.dart';
 import 'mushaf_layout_models.dart';
 import 'quran_models.dart';
 

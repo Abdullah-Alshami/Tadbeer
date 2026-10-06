@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'app/app.dart';
 import 'core/notifications/local_reminder_service.dart';
 import 'core/storage/user_data_store.dart';
-import 'data/quran/quran_repository.dart';
-import 'features/quran/quran_screen.dart';
+import 'features/quran/data/quran_repository.dart';
+import 'features/quran/screens/quran_screen.dart';
 
 /// Entrypoint for the Tadbeer application.
 ///

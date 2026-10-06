@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/storage/user_data_store.dart';
-import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/quran/quran_repository.dart';
-import '../bookmarks/bookmarks_screen.dart';
-import '../highlights/highlights_screen.dart';
-import '../notes/notes_screen.dart';
-import '../search/search_screen.dart';
-import '../settings/settings_screen.dart';
+import '../../../app/localization.dart';
+import '../../../app/theme.dart';
+import '../../../core/storage/user_data_store.dart';
+import '../../../core/utils/arabic_search_normalizer.dart';
+import '../data/quran_repository.dart';
+import '../../bookmarks/bookmarks_screen.dart';
+import '../../highlights/highlights_screen.dart';
+import '../../notes/notes_screen.dart';
+import '../../search/search_screen.dart';
+import '../../settings/settings_screen.dart';
 
 /// Side drawer menu providing direct jump navigation across Surahs and Juzs,
 /// as well as fast access to Home, Settings, Notes, Bookmarks, and Search.

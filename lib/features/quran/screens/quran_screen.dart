@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/storage/user_data_store.dart';
-import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/quran/quran_models.dart';
-import '../../data/quran/quran_repository.dart';
-import '../../shared/widgets/ayah_action_sheet.dart';
-import '../search/search_screen.dart';
+import '../../../app/localization.dart';
+import '../../../app/theme.dart';
+import '../../../core/storage/user_data_store.dart';
+import '../../../core/utils/arabic_search_normalizer.dart';
+import '../data/quran_models.dart';
+import '../data/quran_repository.dart';
+import '../widgets/ayah_action_sheet.dart';
+import '../../search/search_screen.dart';
 import 'quran_page_view.dart';
-import 'quran_side_menu.dart';
+import '../widgets/quran_side_menu.dart';
 
 /// Fullscreen Medina Mushaf reading experience for Tadbeer (1421H layout, 604 pages).
 class QuranScreen extends StatefulWidget {

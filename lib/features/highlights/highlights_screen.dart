@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/quran/quran_repository.dart';
-import '../quran/quran_screen.dart';
+import '../../features/quran/data/quran_repository.dart';
+import '../quran/screens/quran_screen.dart';
 
 /// Screen displaying all user-highlighted ayahs.
 class HighlightsScreen extends StatelessWidget {
@@ -41,9 +41,7 @@ class HighlightsScreen extends StatelessWidget {
                     Icon(
                       Icons.palette_outlined,
                       size: 64,
-                      color: isDark
-                          ? AppColors.darkSurfaceVariant
-                          : const Color(0xFFDDD7C8),
+                      color: AppColors.border(context),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -135,16 +133,18 @@ class HighlightsScreen extends StatelessWidget {
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                       color: isDark
-                                          ? AppColors.comsilk
-                                          : AppColors.oliveDark,
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.lightPrimaryDark,
                                     ),
                                   ),
                                   Text(
                                     'ص ${ArabicSearchNormalizer.toArabicDigits(item.page)}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.olive,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
                                     ),
                                   ),
                                 ],

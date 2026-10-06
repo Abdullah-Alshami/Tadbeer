@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
 import '../../core/utils/note_pdf_exporter.dart';
-import '../../data/notes/note_model.dart';
-import '../../data/quran/quran_repository.dart';
+import '../../features/notes/note_model.dart';
+import '../../features/quran/data/quran_repository.dart';
 
 /// Full-screen, comfortable Arabic note editor for long-form tadbeer reflections.
 class NoteEditorScreen extends StatefulWidget {

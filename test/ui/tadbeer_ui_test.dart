@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tadbeer/app/app.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
-import 'package:tadbeer/data/quran/quran_repository.dart';
+import 'package:tadbeer/features/quran/data/quran_repository.dart';
 import 'package:tadbeer/features/home/home_screen.dart';
-import 'package:tadbeer/features/home/tadbeer_intro_screen.dart';
+import 'package:tadbeer/features/tadabbur/tadbeer_intro_screen.dart';
 import 'package:tadbeer/features/notes/note_editor_screen.dart';
 import 'package:tadbeer/features/notes/notes_screen.dart';
-import 'package:tadbeer/features/quran/quran_screen.dart';
+import 'package:tadbeer/features/quran/screens/quran_screen.dart';
 import 'package:tadbeer/features/search/search_screen.dart';
 
 void main() {

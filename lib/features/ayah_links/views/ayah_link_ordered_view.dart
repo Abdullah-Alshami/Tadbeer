@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/app_colors.dart';
+import '../../../app/theme.dart';
 import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
-import '../../../data/ayah_links/ayah_link_model.dart';
-import '../../../data/ayah_links/ayah_link_repository.dart';
-import '../../../data/quran/quran_repository.dart';
-import '../../quran/quran_screen.dart';
+import '../ayah_link_model.dart';
+import '../ayah_link_repository.dart';
+import '../../quran/data/quran_repository.dart';
+import '../../quran/screens/quran_screen.dart';
 
 /// Calm, serene ordered list view of an Ayah Link.
 ///
@@ -53,7 +53,7 @@ class AyahLinkOrderedView extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogCtx, controller.text.trim()),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.olive,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
             ),
             child: const Text('حفظ'),
@@ -121,22 +121,18 @@ class AyahLinkOrderedView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.comsilk,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark
-                    ? AppColors.darkSurfaceVariant
-                    : AppColors.lightBorder,
-              ),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.hub_rounded,
-                      color: AppColors.olive,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 22,
                     ),
                     const SizedBox(width: 8),
@@ -148,8 +144,8 @@ class AyahLinkOrderedView extends StatelessWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: isDark
-                              ? AppColors.comsilk
-                              : AppColors.oliveDark,
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightPrimaryDark,
                         ),
                       ),
                     ),
@@ -181,10 +177,10 @@ class AyahLinkOrderedView extends StatelessWidget {
               child: Center(
                 child: Column(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.menu_book_rounded,
                       size: 44,
-                      color: AppColors.olive,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(height: 12),
                     const Text(
@@ -198,7 +194,7 @@ class AyahLinkOrderedView extends StatelessWidget {
                     ElevatedButton.icon(
                       onPressed: onAddVerse,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.olive,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                       ),
                       icon: const Icon(Icons.add, size: 18),
@@ -226,15 +222,9 @@ class AyahLinkOrderedView extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 14),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.darkSurface
-                      : AppColors.comsilkLight,
+                  color: AppColors.surface(context),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.darkSurfaceVariant
-                        : AppColors.lightBorder,
-                  ),
+                  border: Border.all(color: AppColors.border(context)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -249,7 +239,8 @@ class AyahLinkOrderedView extends StatelessWidget {
                               width: 26,
                               height: 26,
                               decoration: BoxDecoration(
-                                color: AppColors.olive.withValues(alpha: 0.15),
+                                color: Theme.of(context).colorScheme.primary
+                                    .withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
@@ -257,10 +248,12 @@ class AyahLinkOrderedView extends StatelessWidget {
                                   ArabicSearchNormalizer.toArabicDigits(
                                     index + 1,
                                   ),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.olive,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
                                   ),
                                 ),
                               ),
@@ -268,11 +261,11 @@ class AyahLinkOrderedView extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               'سورة ${surah.name} · الآية ${ArabicSearchNormalizer.toArabicDigits(verse.ayahNumber)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Amiri',
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.olive,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ],
@@ -376,19 +369,21 @@ class AyahLinkOrderedView extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.olive.withValues(alpha: 0.1),
+                          color: Theme.of(context).colorScheme.primary
+                              .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: AppColors.olive.withValues(alpha: 0.25),
+                            color: Theme.of(context).colorScheme.primary
+                                .withValues(alpha: 0.25),
                           ),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.sticky_note_2_outlined,
                               size: 16,
-                              color: AppColors.olive,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 8),
                             Expanded(

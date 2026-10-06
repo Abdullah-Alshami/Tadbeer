@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/localization.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../data/ayah_links/ayah_link_model.dart';
-import '../../../data/ayah_links/ayah_link_repository.dart';
+import '../../../app/theme.dart';
+import '../ayah_link_model.dart';
+import '../ayah_link_repository.dart';
 
 /// Minimal dialog to create or edit an Ayah Link.
 ///
@@ -88,19 +88,20 @@ class _CreateLinkDialogState extends State<CreateLinkDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEditing = widget.existingLink != null;
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
-        backgroundColor: isDark
-            ? AppColors.darkBackground
-            : AppColors.comsilkLight,
+        backgroundColor: AppColors.background(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.hub_outlined, color: AppColors.olive, size: 24),
+            Icon(
+              Icons.hub_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
             const SizedBox(width: 8),
             Text(
               isEditing ? 'تعديل رابط الآيات' : l10n.newAyahLink,
@@ -121,14 +122,10 @@ class _CreateLinkDialogState extends State<CreateLinkDialog> {
                   labelText: l10n.linkTitle,
                   hintText: l10n.linkTitleHint,
                   filled: true,
-                  fillColor: isDark ? AppColors.darkSurface : AppColors.comsilk,
+                  fillColor: AppColors.surface(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark
-                          ? AppColors.darkSurfaceVariant
-                          : AppColors.lightBorder,
-                    ),
+                    borderSide: BorderSide(color: AppColors.border(context)),
                   ),
                 ),
                 validator: (val) {
@@ -146,14 +143,10 @@ class _CreateLinkDialogState extends State<CreateLinkDialog> {
                   labelText: l10n.linkDescription,
                   hintText: l10n.linkDescriptionHint,
                   filled: true,
-                  fillColor: isDark ? AppColors.darkSurface : AppColors.comsilk,
+                  fillColor: AppColors.surface(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark
-                          ? AppColors.darkSurfaceVariant
-                          : AppColors.lightBorder,
-                    ),
+                    borderSide: BorderSide(color: AppColors.border(context)),
                   ),
                 ),
               ),
@@ -168,7 +161,7 @@ class _CreateLinkDialogState extends State<CreateLinkDialog> {
           ElevatedButton(
             onPressed: _isSaving ? null : _submit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.olive,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

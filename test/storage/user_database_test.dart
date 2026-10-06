@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:tadbeer/core/storage/user_database.dart';
-import 'package:tadbeer/core/storage/user_settings_model.dart';
-import 'package:tadbeer/data/ayah_links/ayah_link_model.dart';
-import 'package:tadbeer/data/bookmarks/bookmark_model.dart';
-import 'package:tadbeer/data/highlights/highlight_model.dart';
-import 'package:tadbeer/data/notes/note_model.dart';
-import 'package:tadbeer/data/quran/tadbeer_model.dart';
-import 'package:tadbeer/data/reading_position/reading_position_model.dart';
-import 'package:tadbeer/data/reminders/reminder_model.dart';
+import 'package:tadbeer/features/settings/user_settings_model.dart';
+import 'package:tadbeer/features/ayah_links/ayah_link_model.dart';
+import 'package:tadbeer/features/bookmarks/bookmark_model.dart';
+import 'package:tadbeer/features/highlights/highlight_model.dart';
+import 'package:tadbeer/features/notes/note_model.dart';
+import 'package:tadbeer/features/tadabbur/tadbeer_model.dart';
+import 'package:tadbeer/features/quran/data/reading_position_model.dart';
+import 'package:tadbeer/features/reminders/reminder_model.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -63,7 +63,8 @@ void main() {
         surahNumber: 18,
         ayahNumber: 1,
         page: 293,
-        ayahText: 'الْحَمْدُ لِلَّهِ الَّذِي أَنزَلَ عَلَىٰ عَبْدِهِ الْكِتَابَ',
+        ayahText:
+            'الْحَمْدُ لِلَّهِ الَّذِي أَنزَلَ عَلَىٰ عَبْدِهِ الْكِتَابَ',
         title: 'افتتاحية الكهف',
         createdAt: DateTime(2026, 10, 6, 10),
         updatedAt: DateTime(2026, 10, 6, 10),
@@ -221,20 +222,24 @@ void main() {
     });
 
     test('Clear All User Data', () async {
-      await db.saveReadingPosition(ReadingPosition(
-        page: 1,
-        surahNumber: 1,
-        ayahNumber: 1,
-        updatedAt: DateTime.now(),
-      ));
-      await db.insertBookmark(BookmarkItem(
-        id: 'bm-clear',
-        ayahId: 1,
-        surahNumber: 1,
-        ayahNumber: 1,
-        page: 1,
-        createdAt: DateTime.now(),
-      ));
+      await db.saveReadingPosition(
+        ReadingPosition(
+          page: 1,
+          surahNumber: 1,
+          ayahNumber: 1,
+          updatedAt: DateTime.now(),
+        ),
+      );
+      await db.insertBookmark(
+        BookmarkItem(
+          id: 'bm-clear',
+          ayahId: 1,
+          surahNumber: 1,
+          ayahNumber: 1,
+          page: 1,
+          createdAt: DateTime.now(),
+        ),
+      );
 
       await db.clearAllUserData();
       final pos = await db.loadReadingPosition();

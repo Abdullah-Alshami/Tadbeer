@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
 
 import '../../core/storage/user_data_store.dart';
-import '../quran/quran_models.dart';
+import '../quran/data/quran_models.dart';
 import 'bookmark_model.dart';
 
 /// Repository for managing per-ayah bookmarks.

@@ -6,15 +6,15 @@ import 'package:tadbeer/app/app.dart';
 import 'package:tadbeer/app/localization.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
 import 'package:tadbeer/core/utils/arabic_search_normalizer.dart';
-import 'package:tadbeer/data/ayah_links/ayah_link_model.dart';
-import 'package:tadbeer/data/ayah_links/ayah_link_repository.dart';
-import 'package:tadbeer/data/quran/quran_repository.dart';
+import 'package:tadbeer/features/ayah_links/ayah_link_model.dart';
+import 'package:tadbeer/features/ayah_links/ayah_link_repository.dart';
+import 'package:tadbeer/features/quran/data/quran_repository.dart';
 import 'package:tadbeer/features/ayah_links/ayah_link_detail_screen.dart';
 import 'package:tadbeer/features/ayah_links/ayah_links_screen.dart';
 import 'package:tadbeer/features/ayah_links/views/ayah_link_cards_view.dart';
 import 'package:tadbeer/features/ayah_links/views/ayah_link_network_view.dart';
 import 'package:tadbeer/features/ayah_links/views/ayah_link_ordered_view.dart';
-import 'package:tadbeer/features/quran/quran_screen.dart';
+import 'package:tadbeer/features/quran/screens/quran_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/app_colors.dart';
+import '../../../app/theme.dart';
 import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
-import '../../../data/ayah_links/ayah_link_model.dart';
-import '../../../data/ayah_links/ayah_link_repository.dart';
-import '../../../data/quran/quran_repository.dart';
-import '../../quran/quran_screen.dart';
+import '../ayah_link_model.dart';
+import '../ayah_link_repository.dart';
+import '../../quran/data/quran_repository.dart';
+import '../../quran/screens/quran_screen.dart';
 
 /// Cards View presenting each linked verse in an elegant, mobile-friendly card.
 class AyahLinkCardsView extends StatelessWidget {
@@ -51,7 +51,7 @@ class AyahLinkCardsView extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogCtx, controller.text.trim()),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.olive,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
             ),
             child: const Text('حفظ'),
@@ -117,10 +117,10 @@ class AyahLinkCardsView extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.view_agenda_outlined,
                     size: 44,
-                    color: AppColors.olive,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -131,7 +131,7 @@ class AyahLinkCardsView extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: onAddVerse,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.olive,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                     ),
                     icon: const Icon(Icons.add, size: 18),
@@ -161,15 +161,9 @@ class AyahLinkCardsView extends StatelessWidget {
 
                 return Container(
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkSurface
-                        : AppColors.comsilkLight,
+                    color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.darkSurfaceVariant
-                          : AppColors.lightBorder,
-                    ),
+                    border: Border.all(color: AppColors.border(context)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(
@@ -191,11 +185,11 @@ class AyahLinkCardsView extends StatelessWidget {
                           children: [
                             Text(
                               'سورة ${surah.name} · الآية ${ArabicSearchNormalizer.toArabicDigits(verse.ayahNumber)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Amiri',
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.olive,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                             Row(
@@ -329,12 +323,12 @@ class AyahLinkCardsView extends StatelessWidget {
                             ? Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: AppColors.olive.withValues(alpha: 0.1),
+                                  color: Theme.of(context).colorScheme.primary
+                                      .withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: AppColors.olive.withValues(
-                                      alpha: 0.25,
-                                    ),
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.25),
                                   ),
                                 ),
                                 child: InkWell(
@@ -344,10 +338,12 @@ class AyahLinkCardsView extends StatelessWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.sticky_note_2_outlined,
                                         size: 16,
-                                        color: AppColors.olive,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
@@ -371,24 +367,24 @@ class AyahLinkCardsView extends StatelessWidget {
                                     _editNote(context, verse, isDark),
                                 style: OutlinedButton.styleFrom(
                                   side: BorderSide(
-                                    color: isDark
-                                        ? AppColors.darkSurfaceVariant
-                                        : AppColors.lightBorder,
+                                    color: AppColors.border(context),
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.edit_note,
                                   size: 16,
-                                  color: AppColors.olive,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
-                                label: const Text(
+                                label: Text(
                                   'إضافة تدبر أو ملاحظة',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.olive,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
                                   ),
                                 ),
                               ),

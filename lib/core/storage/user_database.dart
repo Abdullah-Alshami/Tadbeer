@@ -7,14 +7,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common/utils/utils.dart' as sqflite_utils;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import '../../data/ayah_links/ayah_link_model.dart';
-import '../../data/bookmarks/bookmark_model.dart';
-import '../../data/highlights/highlight_model.dart';
-import '../../data/notes/note_model.dart';
-import '../../data/quran/tadbeer_model.dart';
-import '../../data/reading_position/reading_position_model.dart';
-import '../../data/reminders/reminder_model.dart';
-import 'user_settings_model.dart';
+import '../../features/ayah_links/ayah_link_model.dart';
+import '../../features/bookmarks/bookmark_model.dart';
+import '../../features/highlights/highlight_model.dart';
+import '../../features/notes/note_model.dart';
+import '../../features/tadabbur/tadbeer_model.dart';
+import '../../features/quran/data/reading_position_model.dart';
+import '../../features/reminders/reminder_model.dart';
+import '../../features/settings/user_settings_model.dart';
 
 /// SQLite Database Manager for all user-generated data in Tadbeer.
 ///
@@ -41,7 +41,9 @@ class UserDatabase {
 
   Database get db {
     if (_database == null) {
-      throw StateError('UserDatabase has not been initialized. Call init() first.');
+      throw StateError(
+        'UserDatabase has not been initialized. Call init() first.',
+      );
     }
     return _database!;
   }
@@ -59,7 +61,8 @@ class UserDatabase {
     // ignore: deprecated_member_use
     sqflite_utils.lockWarningDuration = null;
 
-    if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
+    if (!kIsWeb &&
+        (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
@@ -184,7 +187,8 @@ class UserDatabase {
     try {
       final rows = await db.query('reading_position', where: 'id = 1');
       if (rows.isEmpty) return null;
-      final data = jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
+      final data =
+          jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
       return ReadingPosition.fromJson(data);
     } catch (e) {
       debugPrint('UserDatabase.loadReadingPosition: $e');
@@ -195,18 +199,14 @@ class UserDatabase {
   Future<void> saveReadingPosition(ReadingPosition position) async {
     if (!isOpen) return;
     try {
-      await db.insert(
-        'reading_position',
-        {
-          'id': 1,
-          'page': position.page,
-          'surah_number': position.surahNumber,
-          'ayah_number': position.ayahNumber,
-          'data': jsonEncode(position.toJson()),
-          'updated_at': position.updatedAt.toIso8601String(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await db.insert('reading_position', {
+        'id': 1,
+        'page': position.page,
+        'surah_number': position.surahNumber,
+        'ayah_number': position.ayahNumber,
+        'data': jsonEncode(position.toJson()),
+        'updated_at': position.updatedAt.toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       debugPrint('UserDatabase.saveReadingPosition: $e');
     }
@@ -231,19 +231,15 @@ class UserDatabase {
   Future<void> insertOrUpdateNote(NoteItem note) async {
     if (!isOpen) return;
     try {
-      await db.insert(
-        'notes',
-        {
-          'id': note.id,
-          'type': note.type.name,
-          'surah_number': note.surahNumber,
-          'ayah_number': note.ayahNumber,
-          'data': jsonEncode(note.toJson()),
-          'created_at': note.createdAt.toIso8601String(),
-          'updated_at': note.updatedAt.toIso8601String(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await db.insert('notes', {
+        'id': note.id,
+        'type': note.type.name,
+        'surah_number': note.surahNumber,
+        'ayah_number': note.ayahNumber,
+        'data': jsonEncode(note.toJson()),
+        'created_at': note.createdAt.toIso8601String(),
+        'updated_at': note.updatedAt.toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       debugPrint('UserDatabase.insertOrUpdateNote: $e');
     }
@@ -277,17 +273,13 @@ class UserDatabase {
   Future<void> insertBookmark(BookmarkItem bookmark) async {
     if (!isOpen) return;
     try {
-      await db.insert(
-        'bookmarks',
-        {
-          'id': bookmark.id,
-          'surah_number': bookmark.surahNumber,
-          'ayah_number': bookmark.ayahNumber,
-          'data': jsonEncode(bookmark.toJson()),
-          'created_at': bookmark.createdAt.toIso8601String(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await db.insert('bookmarks', {
+        'id': bookmark.id,
+        'surah_number': bookmark.surahNumber,
+        'ayah_number': bookmark.ayahNumber,
+        'data': jsonEncode(bookmark.toJson()),
+        'created_at': bookmark.createdAt.toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       debugPrint('UserDatabase.insertBookmark: $e');
     }
@@ -321,18 +313,14 @@ class UserDatabase {
   Future<void> insertOrUpdateHighlight(HighlightItem highlight) async {
     if (!isOpen) return;
     try {
-      await db.insert(
-        'highlights',
-        {
-          'id': highlight.id,
-          'surah_number': highlight.surahNumber,
-          'ayah_number': highlight.ayahNumber,
-          'color_index': highlight.colorIndex,
-          'data': jsonEncode(highlight.toJson()),
-          'created_at': highlight.createdAt.toIso8601String(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await db.insert('highlights', {
+        'id': highlight.id,
+        'surah_number': highlight.surahNumber,
+        'ayah_number': highlight.ayahNumber,
+        'color_index': highlight.colorIndex,
+        'data': jsonEncode(highlight.toJson()),
+        'created_at': highlight.createdAt.toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       debugPrint('UserDatabase.insertOrUpdateHighlight: $e');
     }
@@ -366,16 +354,12 @@ class UserDatabase {
   Future<void> insertOrUpdateReminder(ReminderItem reminder) async {
     if (!isOpen) return;
     try {
-      await db.insert(
-        'reminders',
-        {
-          'id': reminder.id,
-          'is_enabled': reminder.isEnabled ? 1 : 0,
-          'data': jsonEncode(reminder.toJson()),
-          'created_at': reminder.createdAt.toIso8601String(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await db.insert('reminders', {
+        'id': reminder.id,
+        'is_enabled': reminder.isEnabled ? 1 : 0,
+        'data': jsonEncode(reminder.toJson()),
+        'created_at': reminder.createdAt.toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       debugPrint('UserDatabase.insertOrUpdateReminder: $e');
     }
@@ -409,16 +393,12 @@ class UserDatabase {
   Future<void> insertOrUpdateAyahLink(AyahLinkItem link) async {
     if (!isOpen) return;
     try {
-      await db.insert(
-        'ayah_links',
-        {
-          'id': link.id,
-          'data': jsonEncode(link.toJson()),
-          'created_at': link.createdAt.toIso8601String(),
-          'updated_at': link.updatedAt.toIso8601String(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await db.insert('ayah_links', {
+        'id': link.id,
+        'data': jsonEncode(link.toJson()),
+        'created_at': link.createdAt.toIso8601String(),
+        'updated_at': link.updatedAt.toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       debugPrint('UserDatabase.insertOrUpdateAyahLink: $e');
     }
@@ -440,7 +420,10 @@ class UserDatabase {
     try {
       var rows = await db.query('tadbeer_items', orderBy: 'updated_at DESC');
       if (rows.isEmpty) {
-        final legacyRows = await db.query('tadabbur_items', orderBy: 'updated_at DESC');
+        final legacyRows = await db.query(
+          'tadabbur_items',
+          orderBy: 'updated_at DESC',
+        );
         if (legacyRows.isNotEmpty) {
           rows = legacyRows;
         }
@@ -532,14 +515,10 @@ class UserDatabase {
     if (!isOpen) return;
     try {
       for (final entry in settings.toJson().entries) {
-        await db.insert(
-          'user_settings',
-          {
-            'key': entry.key,
-            'value': jsonEncode(entry.value),
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        await db.insert('user_settings', {
+          'key': entry.key,
+          'value': jsonEncode(entry.value),
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     } catch (e) {
       debugPrint('UserDatabase.saveSettings: $e');

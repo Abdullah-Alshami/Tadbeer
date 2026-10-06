@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/app_colors.dart';
+import '../../../app/theme.dart';
 import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
-import '../../../data/quran/quran_models.dart';
-import '../../../data/quran/quran_repository.dart';
-import '../../../data/quran/tadbeer_model.dart';
+import '../data/quran_models.dart';
+import '../data/quran_repository.dart';
+import '../../tadabbur/tadbeer_model.dart';
 
 /// Modal sheet for "🌿 وقفة تدبر" (Tadbeer Pause).
 ///
@@ -211,11 +211,7 @@ class _TadbeerPauseSheetState extends State<TadbeerPauseSheet> {
                         ? AppColors.darkBackground
                         : AppColors.comsilk,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.darkSurfaceVariant
-                          : const Color(0xFFE2DDD0),
-                    ),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Column(
                     children: [
@@ -224,10 +220,12 @@ class _TadbeerPauseSheetState extends State<TadbeerPauseSheet> {
                         children: [
                           Text(
                             'سورة ${surah.name} · الآية ${ArabicSearchNormalizer.toArabicDigits(widget.ayah.ayahNumber)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.olive,
+                              color: isDark
+                                  ? AppColors.darkAccentGold
+                                  : AppColors.lightPrimary,
                             ),
                           ),
                           Text(
@@ -350,16 +348,12 @@ class _TadbeerPauseSheetState extends State<TadbeerPauseSheet> {
                         : AppColors.comsilk,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                        color: isDark
-                            ? AppColors.darkSurfaceVariant
-                            : const Color(0xFFDDD7C8),
-                      ),
+                      borderSide: BorderSide(color: AppColors.border(context)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: AppColors.olive,
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
                         width: 1.5,
                       ),
                     ),

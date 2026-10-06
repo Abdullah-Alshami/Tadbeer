@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/localization.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../app/theme.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
-import '../../../data/ayah_links/ayah_link_repository.dart';
-import '../../../data/quran/quran_models.dart';
-import '../../../data/quran/quran_repository.dart';
+import '../ayah_link_repository.dart';
+import '../../quran/data/quran_models.dart';
+import '../../quran/data/quran_repository.dart';
 
 /// Dialog allowing user to select a verified Quran Ayah and add it to an Ayah Link.
 class AddVerseToLinkDialog extends StatefulWidget {
@@ -106,13 +106,14 @@ class _AddVerseToLinkDialogState extends State<AddVerseToLinkDialog> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
-        backgroundColor: isDark
-            ? AppColors.darkBackground
-            : AppColors.comsilkLight,
+        backgroundColor: AppColors.background(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.bookmark_add_outlined, color: AppColors.olive),
+            Icon(
+              Icons.bookmark_add_outlined,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(width: 8),
             Text(
               l10n.addVerse,
@@ -135,15 +136,11 @@ class _AddVerseToLinkDialogState extends State<AddVerseToLinkDialog> {
                       decoration: InputDecoration(
                         labelText: 'السورة',
                         filled: true,
-                        fillColor: isDark
-                            ? AppColors.darkSurface
-                            : AppColors.comsilk,
+                        fillColor: AppColors.surface(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide(
-                            color: isDark
-                                ? AppColors.darkSurfaceVariant
-                                : AppColors.lightBorder,
+                            color: AppColors.border(context),
                           ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
@@ -185,15 +182,11 @@ class _AddVerseToLinkDialogState extends State<AddVerseToLinkDialog> {
                       decoration: InputDecoration(
                         labelText: 'الآية',
                         filled: true,
-                        fillColor: isDark
-                            ? AppColors.darkSurface
-                            : AppColors.comsilk,
+                        fillColor: AppColors.surface(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide(
-                            color: isDark
-                                ? AppColors.darkSurfaceVariant
-                                : AppColors.lightBorder,
+                            color: AppColors.border(context),
                           ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
@@ -235,13 +228,9 @@ class _AddVerseToLinkDialogState extends State<AddVerseToLinkDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.comsilk,
+                    color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.darkSurfaceVariant
-                          : AppColors.lightBorder,
-                    ),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -291,14 +280,10 @@ class _AddVerseToLinkDialogState extends State<AddVerseToLinkDialog> {
                   labelText: 'ملاحظتك على هذه الآية في هذا الرابط (اختيارية)',
                   hintText: 'سجل ما لفت نظرك في ربط هذه الآية...',
                   filled: true,
-                  fillColor: isDark ? AppColors.darkSurface : AppColors.comsilk,
+                  fillColor: AppColors.surface(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark
-                          ? AppColors.darkSurfaceVariant
-                          : AppColors.lightBorder,
-                    ),
+                    borderSide: BorderSide(color: AppColors.border(context)),
                   ),
                 ),
               ),
@@ -313,7 +298,7 @@ class _AddVerseToLinkDialogState extends State<AddVerseToLinkDialog> {
           ElevatedButton(
             onPressed: (_isAlreadyAdded || _isAdding) ? null : _submit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.olive,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

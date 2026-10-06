@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/quran/quran_repository.dart';
+import '../../features/quran/data/quran_repository.dart';
 import '../ayah_links/ayah_links_screen.dart';
 import '../bookmarks/bookmarks_screen.dart';
 import '../highlights/highlights_screen.dart';
 import '../notes/notes_screen.dart';
-import '../quran/quran_screen.dart';
+import '../quran/screens/quran_screen.dart';
 import '../search/search_screen.dart';
 import '../../shared/widgets/app_drawer.dart';
 
@@ -44,11 +44,11 @@ class HomeScreen extends StatelessWidget {
           ),
           title: Text(
             l10n.appName,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Amiri',
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppColors.olive,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ),
@@ -82,7 +82,8 @@ class HomeScreen extends StatelessWidget {
                                 : AppColors.comsilk,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: AppColors.olive.withValues(alpha: 0.35),
+                              color: Theme.of(context).colorScheme.primary
+                                  .withValues(alpha: 0.35),
                               width: 1.5,
                             ),
                             boxShadow: [
@@ -98,9 +99,11 @@ class HomeScreen extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.bookmark_added,
-                                    color: AppColors.olive,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
                                     size: 22,
                                   ),
                                   const SizedBox(width: 8),
@@ -110,8 +113,8 @@ class HomeScreen extends StatelessWidget {
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: isDark
-                                          ? AppColors.comsilk
-                                          : AppColors.oliveDark,
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary,
                                     ),
                                   ),
                                 ],
@@ -142,7 +145,9 @@ class HomeScreen extends StatelessWidget {
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.olive,
+                                  backgroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .primary,
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 14,
@@ -170,11 +175,11 @@ class HomeScreen extends StatelessWidget {
                     // Section Title
                     Text(
                       l10n.quickActions,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Amiri',
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.olive,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -301,8 +306,10 @@ class _HomeNavigationCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        hoverColor: AppColors.olive.withValues(alpha: 0.08),
-        splashColor: AppColors.olive.withValues(alpha: 0.12),
+        hoverColor: Theme.of(context).colorScheme.primary
+            .withValues(alpha: 0.08),
+        splashColor: Theme.of(context).colorScheme.primary
+            .withValues(alpha: 0.12),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -311,10 +318,15 @@ class _HomeNavigationCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.olive.withValues(alpha: 0.14),
+                  color: Theme.of(context).colorScheme.primary
+                      .withValues(alpha: 0.14),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: AppColors.olive, size: 24),
+                child: Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -351,24 +363,25 @@ class _HomeNavigationCard extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.olive.withValues(alpha: 0.15),
+                    color: Theme.of(context).colorScheme.primary
+                        .withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     ArabicSearchNormalizer.toArabicDigits(trailingCount!),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.olive,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
               ],
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios,
                 size: 14,
-                color: AppColors.olive,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ],
           ),

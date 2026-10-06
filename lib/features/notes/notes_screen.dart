@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
 import '../../core/utils/note_pdf_exporter.dart';
-import '../../data/notes/note_model.dart';
-import '../../data/quran/quran_repository.dart';
-import '../quran/quran_screen.dart';
+import '../../features/notes/note_model.dart';
+import '../../features/quran/data/quran_repository.dart';
+import '../quran/screens/quran_screen.dart';
 import 'note_editor_screen.dart';
 
 /// Notes screen displaying both Ayah Notes and Free Notes in a unified stream.
@@ -130,9 +130,7 @@ class _NotesScreenState extends State<NotesScreen> {
                           Icon(
                             Icons.edit_note,
                             size: 64,
-                            color: isDark
-                                ? AppColors.darkSurfaceVariant
-                                : const Color(0xFFDDD7C8),
+                            color: AppColors.border(context),
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -291,11 +289,7 @@ class _NoteCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.comsilk,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark
-                ? AppColors.darkSurfaceVariant
-                : const Color(0xFFDDD7C8),
-          ),
+          border: Border.all(color: AppColors.border(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

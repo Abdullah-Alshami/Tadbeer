@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/bookmarks/bookmark_model.dart';
-import '../../data/quran/quran_repository.dart';
-import '../quran/quran_screen.dart';
+import '../../features/bookmarks/bookmark_model.dart';
+import '../../features/quran/data/quran_repository.dart';
+import '../quran/screens/quran_screen.dart';
 
 /// Screen listing all bookmarked ayahs for quick recitation navigation.
 class BookmarksScreen extends StatelessWidget {
@@ -42,9 +42,7 @@ class BookmarksScreen extends StatelessWidget {
                     Icon(
                       Icons.bookmark_border,
                       size: 64,
-                      color: isDark
-                          ? AppColors.darkSurfaceVariant
-                          : const Color(0xFFDDD7C8),
+                      color: AppColors.border(context),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -140,9 +138,13 @@ class _BookmarkTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 2),
-              child: Icon(Icons.bookmark, color: AppColors.olive, size: 22),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(
+                Icons.bookmark,
+                color: Theme.of(context).colorScheme.primary,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(

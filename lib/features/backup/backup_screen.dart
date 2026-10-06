@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../app/localization.dart';
-import '../../core/constants/app_colors.dart';
+import '../../app/theme.dart';
 import '../../core/security/backup_crypto_service.dart';
 
 /// Screen for creating and restoring encrypted user backups (.quranbackup).
@@ -273,11 +273,7 @@ class _BackupScreenState extends State<BackupScreen> {
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkSurface : AppColors.comsilk,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.darkSurfaceVariant
-                        : const Color(0xFFDDD7C8),
-                  ),
+                  border: Border.all(color: AppColors.border(context)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -426,11 +422,7 @@ class _BackupScreenState extends State<BackupScreen> {
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkSurface : AppColors.comsilk,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.darkSurfaceVariant
-                        : const Color(0xFFDDD7C8),
-                  ),
+                  border: Border.all(color: AppColors.border(context)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

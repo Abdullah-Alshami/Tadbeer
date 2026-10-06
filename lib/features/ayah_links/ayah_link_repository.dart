@@ -2,7 +2,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
-import '../../data/quran/quran_repository.dart';
+import '../../features/quran/data/quran_repository.dart';
 import 'ayah_link_model.dart';
 
 /// Repository for managing Ayah Links (روابط الآيات).

@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
-import 'package:tadbeer/data/notes/note_model.dart';
-import 'package:tadbeer/data/quran/tadbeer_model.dart';
+import 'package:tadbeer/features/notes/note_model.dart';
+import 'package:tadbeer/features/tadabbur/tadbeer_model.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -192,40 +192,43 @@ void main() {
       expect(UserDataStore.instance.getTadbeer(112, 1), isNull);
     });
 
-    test('getReflectionForAyah resolves Note first, then Tadbeer combined summary', () async {
-      // 1. Initially neither exists
-      expect(UserDataStore.instance.getReflectionForAyah(55, 13), isNull);
+    test(
+      'getReflectionForAyah resolves Note first, then Tadbeer combined summary',
+      () async {
+        // 1. Initially neither exists
+        expect(UserDataStore.instance.getReflectionForAyah(55, 13), isNull);
 
-      // 2. Add Tadbeer pause
-      await UserDataStore.instance.saveTadbeer(
-        surahNumber: 55,
-        ayahNumber: 13,
-        answers: {1: 'فبأي آلاء ربكما تكذبان', 3: 'شكر النعم وعدم إنكارها'},
-      );
+        // 2. Add Tadbeer pause
+        await UserDataStore.instance.saveTadbeer(
+          surahNumber: 55,
+          ayahNumber: 13,
+          answers: {1: 'فبأي آلاء ربكما تكذبان', 3: 'شكر النعم وعدم إنكارها'},
+        );
 
-      expect(
-        UserDataStore.instance.getReflectionForAyah(55, 13),
-        equals('فبأي آلاء ربكما تكذبان\nشكر النعم وعدم إنكارها'),
-      );
+        expect(
+          UserDataStore.instance.getReflectionForAyah(55, 13),
+          equals('فبأي آلاء ربكما تكذبان\nشكر النعم وعدم إنكارها'),
+        );
 
-      // 3. Add explicit Ayah Note; Note takes priority
-      final note = NoteItem(
-        id: 'note-55-13',
-        title: 'وقفة شكر',
-        content: 'ملاحظة خاصة على آلاء الله ونعمه',
-        type: NoteType.ayah,
-        surahNumber: 55,
-        ayahNumber: 13,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      await UserDataStore.instance.putNote(note);
+        // 3. Add explicit Ayah Note; Note takes priority
+        final note = NoteItem(
+          id: 'note-55-13',
+          title: 'وقفة شكر',
+          content: 'ملاحظة خاصة على آلاء الله ونعمه',
+          type: NoteType.ayah,
+          surahNumber: 55,
+          ayahNumber: 13,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await UserDataStore.instance.putNote(note);
 
-      expect(
-        UserDataStore.instance.getReflectionForAyah(55, 13),
-        equals('ملاحظة خاصة على آلاء الله ونعمه'),
-      );
-    });
+        expect(
+          UserDataStore.instance.getReflectionForAyah(55, 13),
+          equals('ملاحظة خاصة على آلاء الله ونعمه'),
+        );
+      },
+    );
 
     test(
       'Snapshot export includes Tadbeer and restore replaces completely',
@@ -237,7 +240,10 @@ void main() {
         );
 
         final snapshot = UserDataStore.instance.exportSnapshot();
-        expect(snapshot.containsKey('tadbeer') || snapshot.containsKey('tadabbur'), isTrue);
+        expect(
+          snapshot.containsKey('tadbeer') || snapshot.containsKey('tadabbur'),
+          isTrue,
+        );
         final list = (snapshot['tadbeer'] ?? snapshot['tadabbur']) as List;
         expect(list.length, equals(1));
         expect((list.first as Map)['ayahNumber'], equals(2));
