@@ -1,3 +1,5 @@
+import '../../core/storage/user_data_store.dart';
+
 /// Position of a node within the Ayah Link canvas.
 class LinkNodePosition {
   final double dx;
@@ -52,6 +54,16 @@ class AyahLinkVerse {
   });
 
   String get ayahKey => '$surahNumber:$ayahNumber';
+
+  /// Returns the effective reflection note for this verse:
+  /// 1. Specific note assigned within this link (if non-empty)
+  /// 2. User's general note or Tadabbur pause reflection for this Ayah
+  String? getEffectiveNote() {
+    if (note != null && note!.trim().isNotEmpty) {
+      return note!.trim();
+    }
+    return UserDataStore.instance.getReflectionForAyah(surahNumber, ayahNumber);
+  }
 
   Map<String, dynamic> toJson() => {
     'ayahId': ayahId,

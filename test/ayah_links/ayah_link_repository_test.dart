@@ -323,7 +323,8 @@ void main() {
       );
 
       // Verify JSON representation does NOT contain full Quran text
-      final json = link.toJson();
+      final updatedLink = repo.getLink(link.id)!;
+      final json = updatedLink.toJson();
       final versesJson = json['verses'] as List;
       final verseMap = versesJson.first as Map<String, dynamic>;
 

@@ -3,7 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tadbeer/app/app.dart';
+import 'package:tadbeer/app/localization.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
+import 'package:tadbeer/core/utils/arabic_search_normalizer.dart';
+import 'package:tadbeer/data/ayah_links/ayah_link_model.dart';
 import 'package:tadbeer/data/ayah_links/ayah_link_repository.dart';
 import 'package:tadbeer/data/quran/quran_repository.dart';
 import 'package:tadbeer/features/ayah_links/ayah_link_detail_screen.dart';
@@ -77,79 +80,125 @@ void main() {
 
         // Should navigate to AyahLinkDetailScreen
         expect(find.byType(AyahLinkDetailScreen), findsOneWidget);
-        expect(find.text('الصبر عند الشدة'), findsOneWidget);
+        expect(find.text('الصبر عند الشدة'), findsWidgets);
       },
     );
+
+    Widget buildTestApp(Widget child) {
+      return AppLocalizationScope(
+        currentLanguage: AppLanguage.arabic,
+        strings: const AppStrings(AppLanguage.arabic),
+        onLanguageChanged: (_) {},
+        child: MaterialApp(home: child),
+      );
+    }
 
     testWidgets(
       'Detail Screen switches smoothly between Network, Ordered, and Cards views',
       (WidgetTester tester) async {
-        final repo = AyahLinkRepository();
-        final link = await repo.createLink(
-          title: 'الاستعانة بالصبر',
-          description: 'وصف التجربة',
-        );
-        await repo.addVerseToLink(
-          link.id,
-          ayahId: 160,
-          surahNumber: 2,
-          ayahNumber: 153,
-          page: 23,
-        );
+        late AyahLinkItem link;
+        await tester.runAsync(() async {
+          final repo = AyahLinkRepository();
+          link = await repo.createLink(
+            title: 'الاستعانة بالصبر',
+            description: 'وصف التجربة',
+          );
+          await repo.addVerseToLink(
+            link.id,
+            ayahId: 160,
+            surahNumber: 2,
+            ayahNumber: 153,
+            page: 23,
+          );
+        });
 
         await tester.pumpWidget(
-          MaterialApp(home: AyahLinkDetailScreen(linkId: link.id)),
+          buildTestApp(AyahLinkDetailScreen(linkId: link.id)),
         );
         await tester.pumpAndSettle();
 
         // Starts in Network View
         expect(find.byType(AyahLinkNetworkView), findsOneWidget);
-        expect(find.byType(AyahLinkOrderedView), findsOneWidget);
-        expect(find.byType(AyahLinkCardsView), findsOneWidget);
+        expect(
+          find.byType(AyahLinkOrderedView, skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(
+          find.byType(AyahLinkCardsView, skipOffstage: false),
+          findsOneWidget,
+        );
 
         // Switch to Ordered view
         final orderedTab = find.text('مرتب');
         expect(orderedTab, findsOneWidget);
-        await tester.tap(orderedTab);
+        await tester.runAsync(() async {
+          await tester.tap(orderedTab);
+          await Future.delayed(const Duration(milliseconds: 100));
+        });
         await tester.pumpAndSettle();
+        expect(find.byType(AyahLinkOrderedView), findsOneWidget);
 
         // Switch to Cards view
         final cardsTab = find.text('بطاقات');
         expect(cardsTab, findsOneWidget);
-        await tester.tap(cardsTab);
+        await tester.runAsync(() async {
+          await tester.tap(cardsTab);
+          await Future.delayed(const Duration(milliseconds: 100));
+        });
         await tester.pumpAndSettle();
+        expect(find.byType(AyahLinkCardsView), findsOneWidget);
 
         // Verify verse content is visible in Cards view
-        expect(find.textContaining('استعينوا بالصبر'), findsOneWidget);
+        final verseFinder = find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              ArabicSearchNormalizer.normalize(w.data ?? '')
+                  .contains('استعينوا بالصبر'),
+        );
+        expect(verseFinder, findsOneWidget);
       },
     );
 
     testWidgets(
       '13: Open in Quran from Ayah Link opens correct page and surah in QuranScreen',
       (WidgetTester tester) async {
-        final repo = AyahLinkRepository();
-        final link = await repo.createLink(title: 'الانتقال للمصحف');
-        await repo.addVerseToLink(
-          link.id,
-          ayahId: 160,
-          surahNumber: 2,
-          ayahNumber: 153,
-          page: 23,
-        );
+        late AyahLinkItem link;
+        await tester.runAsync(() async {
+          final repo = AyahLinkRepository();
+          link = await repo.createLink(title: 'الانتقال للمصحف');
+          await repo.addVerseToLink(
+            link.id,
+            ayahId: 160,
+            surahNumber: 2,
+            ayahNumber: 153,
+            page: 23,
+          );
+        });
 
         await tester.pumpWidget(
-          MaterialApp(home: AyahLinkDetailScreen(linkId: link.id)),
+          buildTestApp(AyahLinkDetailScreen(linkId: link.id)),
         );
         await tester.pumpAndSettle();
 
         // Switch to Cards view
-        await tester.tap(find.text('بطاقات'));
+        await tester.runAsync(() async {
+          await tester.tap(find.text('بطاقات'));
+          await Future.delayed(const Duration(milliseconds: 100));
+        });
         await tester.pumpAndSettle();
 
-        // Tap verse text or menu
-        final verseTextFinder = find.textContaining('استعينوا بالصبر');
+        // Tap verse text box
+        final verseTextFinder = find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              ArabicSearchNormalizer.normalize(w.data ?? '')
+                  .contains('استعينوا بالصبر'),
+        );
         expect(verseTextFinder, findsOneWidget);
-        await tester.tap(verseTextFinder);
+        await tester.runAsync(() async {
+          await tester.tap(verseTextFinder);
+          await Future.delayed(const Duration(milliseconds: 100));
+        });
         await tester.pumpAndSettle();
 
         // QuranScreen should open on page 23

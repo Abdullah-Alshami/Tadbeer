@@ -11,6 +11,7 @@ import '../../data/notes/note_model.dart';
 import '../../data/quran/quran_models.dart';
 import '../../data/quran/quran_repository.dart';
 import '../../features/ayah_links/widgets/ayah_link_picker_dialog.dart';
+import '../../features/quran/widgets/tadabbur_pause_sheet.dart';
 
 /// Modal action sheet for interacting with an individual Ayah.
 ///
@@ -392,82 +393,101 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                   ),
                 ),
               ] else ...[
-                // Main Actions Row: Note, Bookmark, Highlight, Copy
+                // Main Actions Row: Tadabbur Pause, Ayah Links, Note, Bookmark, Highlight, Copy
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 12,
-                    horizontal: 8,
+                    horizontal: 4,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Note action
-                      _ActionButton(
-                        icon: Icons.edit_note,
-                        label: l10n.addNote,
-                        onTap: () => setState(() => _isNoteEditorOpen = true),
-                        hasActiveIndicator: _existingNoteId != null,
-                      ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Tadabbur Pause action
+                        _ActionButton(
+                          icon: Icons.spa_outlined,
+                          label: 'وقفة تدبر',
+                          hasActiveIndicator:
+                              storage.getTadabbur(
+                                widget.ayah.surahNumber,
+                                widget.ayah.ayahNumber,
+                              ) !=
+                              null,
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            TadabburPauseSheet.show(context, widget.ayah);
+                          },
+                        ),
 
-                      // Bookmark action
-                      _ActionButton(
-                        icon: isBookmarked
-                            ? Icons.bookmark
-                            : Icons.bookmark_border,
-                        label: isBookmarked
-                            ? l10n.removeBookmark
-                            : l10n.saveBookmark,
-                        iconColor: isBookmarked ? AppColors.olive : null,
-                        onTap: () async {
-                          await storage.toggleBookmark(widget.ayah);
-                          if (context.mounted) Navigator.of(context).pop();
-                        },
-                      ),
+                        // Ayah Links action
+                        _ActionButton(
+                          icon: Icons.hub_outlined,
+                          label: 'رابط آيات',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            AyahLinkPickerDialog.show(context, widget.ayah);
+                          },
+                        ),
 
-                      // Highlight action
-                      _ActionButton(
-                        icon: Icons.palette_outlined,
-                        label: l10n.highlight,
-                        iconColor: currentHighlight != null
-                            ? AppColors.highlightColors[currentHighlight
-                                  .colorIndex]
-                            : null,
-                        onTap: () =>
-                            setState(() => _isHighlightPickerOpen = true),
-                      ),
+                        // Note action
+                        _ActionButton(
+                          icon: Icons.edit_note,
+                          label: l10n.addNote,
+                          onTap: () => setState(() => _isNoteEditorOpen = true),
+                          hasActiveIndicator: _existingNoteId != null,
+                        ),
 
-                      // Ayah Links action
-                      _ActionButton(
-                        icon: Icons.hub_outlined,
-                        label: 'رابط آيات',
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          AyahLinkPickerDialog.show(context, widget.ayah);
-                        },
-                      ),
+                        // Bookmark action
+                        _ActionButton(
+                          icon: isBookmarked
+                              ? Icons.bookmark
+                              : Icons.bookmark_border,
+                          label: isBookmarked
+                              ? l10n.removeBookmark
+                              : l10n.saveBookmark,
+                          iconColor: isBookmarked ? AppColors.olive : null,
+                          onTap: () async {
+                            await storage.toggleBookmark(widget.ayah);
+                            if (context.mounted) Navigator.of(context).pop();
+                          },
+                        ),
 
-                      // Copy action
-                      _ActionButton(
-                        icon: Icons.copy,
-                        label: l10n.copy,
-                        onTap: () {
-                          final shareText =
-                              '﴿${widget.ayah.text}﴾ [سورة ${surah.name}: ${widget.ayah.ayahNumber}]';
-                          Clipboard.setData(ClipboardData(text: shareText));
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                l10n.copiedToClipboard,
-                                textAlign: TextAlign.center,
+                        // Highlight action
+                        _ActionButton(
+                          icon: Icons.palette_outlined,
+                          label: l10n.highlight,
+                          iconColor: currentHighlight != null
+                              ? AppColors.highlightColors[currentHighlight
+                                    .colorIndex]
+                              : null,
+                          onTap: () =>
+                              setState(() => _isHighlightPickerOpen = true),
+                        ),
+
+                        // Copy action
+                        _ActionButton(
+                          icon: Icons.copy,
+                          label: l10n.copy,
+                          onTap: () {
+                            final shareText =
+                                '﴿${widget.ayah.text}﴾ [سورة ${surah.name}: ${widget.ayah.ayahNumber}]';
+                            Clipboard.setData(ClipboardData(text: shareText));
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  l10n.copiedToClipboard,
+                                  textAlign: TextAlign.center,
+                                ),
+                                duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
                               ),
-                              duration: const Duration(seconds: 2),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

@@ -3,16 +3,18 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../../core/utils/arabic_search_normalizer.dart';
+import 'mushaf_layout_models.dart';
 import 'quran_models.dart';
 
 /// Repository providing verified, authentic Uthmani Quran data for Tadbeer.
 ///
 /// EDUCATIONAL NOTE:
 /// Quran Data Architecture & Integrity:
-/// 1. Data Source: Bundled Tanzil Uthmani text (`assets/quran/quran_data.json`).
+/// 1. Data Source: Bundled Tanzil Uthmani text (`assets/quran/quran_data.json`)
+///    and authentic Madinah Mushaf V2 (1421H) line layout (`assets/quran/mushaf_layout.json`).
 ///    - 114 Surahs (Surah names, revelation type, ayah counts, page ranges)
 ///    - 6,236 Ayahs (global stable 1-based sequential ID, surah number, ayah number, page, juz, hizb, quarter, sajdah)
-///    - 604 standard Madani Mushaf pages
+///    - 604 standard Madani Mushaf pages (Word -> Line -> Page)
 /// 2. Immutability: Quranic text is immutable and strictly read-only.
 /// 3. Instant Search Optimization: An in-memory cache of pre-normalized ayah strings
 ///    (`_normalizedAyahTexts`) is built during [init]. Substring search operates directly
@@ -30,10 +32,12 @@ class QuranRepository {
   final Map<int, Ayah> _ayahsById = {};
   final Map<String, Ayah> _ayahsByKey = {};
   final List<String> _normalizedAyahTexts = [];
+  final List<MushafPageLayout> _mushafPages = [];
 
   List<Surah> get surahs => List.unmodifiable(_surahs);
   List<QuranPage> get pages => List.unmodifiable(_pages);
   List<Ayah> get allAyahs => List.unmodifiable(_allAyahs);
+  List<MushafPageLayout> get mushafPages => List.unmodifiable(_mushafPages);
 
   Future<void> init() async {
     if (_isLoaded) return;
@@ -67,8 +71,29 @@ class QuranRepository {
       }
     }
 
+    // Load authentic Madinah Mushaf V2 (1421H) Word -> Line -> Page layout
+    final layoutString = await rootBundle.loadString(
+      'assets/quran/mushaf_layout.json',
+    );
+    final layoutData = jsonDecode(layoutString) as Map<String, dynamic>;
+    final rawLayoutPages = layoutData['pages'] as List<dynamic>;
+    _mushafPages.clear();
+    for (final lp in rawLayoutPages) {
+      _mushafPages.add(MushafPageLayout.fromJson(lp as Map<String, dynamic>));
+    }
+
     _isLoaded = true;
   }
+
+  MushafPageLayout getMushafPage(int pageNumber) {
+    assert(_isLoaded, 'QuranRepository must be initialized before use');
+    if (pageNumber < 1 || pageNumber > 604) {
+      pageNumber = pageNumber.clamp(1, 604);
+    }
+    return _mushafPages[pageNumber - 1];
+  }
+
+  Ayah? getAyahForWord(MushafWord word) => getAyah(word.surah, word.ayah);
 
   QuranPage getPage(int pageNumber) {
     assert(_isLoaded, 'QuranRepository must be initialized before use');

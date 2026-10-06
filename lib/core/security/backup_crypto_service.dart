@@ -71,6 +71,7 @@ class BackupCryptoService {
     bool settings = true,
     bool reminders = true,
     bool ayahLinks = true,
+    bool tadabbur = true,
   }) async {
     try {
       final snapshot = UserDataStore.instance.exportSnapshot(
@@ -80,6 +81,7 @@ class BackupCryptoService {
         settings: settings,
         reminders: reminders,
         ayahLinks: ayahLinks,
+        tadabbur: tadabbur,
       );
 
       final rawPayloadBytes = utf8.encode(jsonEncode(snapshot));

@@ -67,9 +67,13 @@ flutter:
 
   assets:
     - assets/quran/quran_data.json
+    - assets/quran/mushaf_layout.json
     - assets/fonts/
 
   fonts:
+    - family: DigitalKhatt
+      fonts:
+        - asset: assets/fonts/DigitalKhattV2.otf
     - family: AmiriQuran
       fonts:
         - asset: assets/fonts/AmiriQuran-Regular.ttf

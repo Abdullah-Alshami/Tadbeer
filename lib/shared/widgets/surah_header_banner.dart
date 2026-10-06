@@ -15,8 +15,8 @@ class SurahHeaderBanner extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 14),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurfaceVariant : AppColors.comsilk,
         borderRadius: BorderRadius.circular(10),
@@ -87,7 +87,7 @@ class BismillahBanner extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Center(
         child: Text(
           'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',

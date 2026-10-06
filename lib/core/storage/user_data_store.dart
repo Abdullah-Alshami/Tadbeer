@@ -10,6 +10,7 @@ import '../../data/bookmarks/bookmark_model.dart';
 import '../../data/highlights/highlight_model.dart';
 import '../../data/notes/note_model.dart';
 import '../../data/quran/quran_models.dart';
+import '../../data/quran/tadabbur_model.dart';
 import '../../data/reading_position/reading_position_model.dart';
 import '../../data/reminders/reminder_model.dart';
 import 'user_settings_model.dart';
@@ -47,6 +48,7 @@ class UserDataStore extends ChangeNotifier {
   final List<HighlightItem> _highlights = [];
   final List<ReminderItem> _reminders = [];
   final List<AyahLinkItem> _ayahLinks = [];
+  final List<TadabburItem> _tadabburItems = [];
   UserSettings _settings = const UserSettings();
 
   ReadingPosition get readingPosition => _readingPosition;
@@ -55,11 +57,13 @@ class UserDataStore extends ChangeNotifier {
   List<HighlightItem> get highlights => List.unmodifiable(_highlights);
   List<ReminderItem> get reminders => List.unmodifiable(_reminders);
   List<AyahLinkItem> get ayahLinks => List.unmodifiable(_ayahLinks);
+  List<TadabburItem> get tadabburItems => List.unmodifiable(_tadabburItems);
   UserSettings get settings => _settings;
 
   // In-memory lookups for O(1) page rendering performance
   final Map<String, BookmarkItem> _bookmarkLookup = {};
   final Map<String, HighlightItem> _highlightLookup = {};
+  final Map<String, TadabburItem> _tadabburLookup = {};
 
   File? _dataFile;
 
@@ -70,6 +74,17 @@ class UserDataStore extends ChangeNotifier {
 
     if (testFile != null) {
       _dataFile = testFile;
+      _readingPosition = ReadingPosition.defaultPosition();
+      _notes.clear();
+      _bookmarks.clear();
+      _bookmarkLookup.clear();
+      _highlights.clear();
+      _highlightLookup.clear();
+      _reminders.clear();
+      _ayahLinks.clear();
+      _tadabburItems.clear();
+      _tadabburLookup.clear();
+      _settings = const UserSettings();
     } else {
       final dir = await getApplicationDocumentsDirectory();
       _dataFile = File('${dir.path}/$fileName');
@@ -152,6 +167,17 @@ class UserDataStore extends ChangeNotifier {
       _ayahLinks.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     }
 
+    _tadabburItems.clear();
+    _tadabburLookup.clear();
+    if (data.containsKey('tadabbur')) {
+      final rawTadabbur = data['tadabbur'] as List;
+      for (final t in rawTadabbur) {
+        final item = TadabburItem.fromJson(t as Map<String, dynamic>);
+        _tadabburItems.add(item);
+        _tadabburLookup[item.ayahKey] = item;
+      }
+    }
+
     if (data.containsKey('settings')) {
       _settings = UserSettings.fromJson(
         data['settings'] as Map<String, dynamic>,
@@ -172,6 +198,7 @@ class UserDataStore extends ChangeNotifier {
       'highlights': _highlights.map((h) => h.toJson()).toList(),
       'reminders': _reminders.map((r) => r.toJson()).toList(),
       'ayahLinks': _ayahLinks.map((l) => l.toJson()).toList(),
+      'tadabbur': _tadabburItems.map((t) => t.toJson()).toList(),
       'settings': _settings.toJson(),
     };
 
@@ -590,12 +617,91 @@ class UserDataStore extends ChangeNotifier {
     _highlightLookup.clear();
     _reminders.clear();
     _ayahLinks.clear();
+    _tadabburItems.clear();
+    _tadabburLookup.clear();
     _settings = const UserSettings();
     notifyListeners();
     await saveToDisk();
   }
 
   Future<void> resetAllUserData() => resetAllData();
+
+  // ==========================================
+  // TADABBUR PAUSE (وقفة تدبر)
+  // ==========================================
+
+  TadabburItem? getTadabbur(int surahNumber, int ayahNumber) {
+    return _tadabburLookup['$surahNumber:$ayahNumber'];
+  }
+
+  /// Resolves the most relevant reflection note for an ayah across Notes & Tadabbur.
+  String? getReflectionForAyah(int surahNumber, int ayahNumber) {
+    final notes = findNotesForAyah(surahNumber, ayahNumber);
+    if (notes.isNotEmpty && notes.first.content.trim().isNotEmpty) {
+      return notes.first.content.trim();
+    }
+    final tadabbur = getTadabbur(surahNumber, ayahNumber);
+    if (tadabbur != null && tadabbur.combinedSummary.isNotEmpty) {
+      return tadabbur.combinedSummary;
+    }
+    return null;
+  }
+
+  Future<void> saveTadabbur({
+    required int surahNumber,
+    required int ayahNumber,
+    int? ayahId,
+    required Map<int, String> answers,
+  }) async {
+    final cleanedAnswers = <int, String>{};
+    answers.forEach((k, v) {
+      final trimmed = v.trim();
+      if (trimmed.isNotEmpty) {
+        cleanedAnswers[k] = trimmed;
+      }
+    });
+
+    final key = '$surahNumber:$ayahNumber';
+    if (cleanedAnswers.isEmpty) {
+      // Do not save empty responses; clean up if all were deleted
+      _tadabburItems.removeWhere((t) => t.ayahKey == key);
+      _tadabburLookup.remove(key);
+      notifyListeners();
+      await saveToDisk();
+      return;
+    }
+
+    final now = DateTime.now();
+    final existing = _tadabburLookup[key];
+    final item = TadabburItem(
+      id: existing?.id ?? const Uuid().v4(),
+      surahNumber: surahNumber,
+      ayahNumber: ayahNumber,
+      ayahId: ayahId ?? existing?.ayahId,
+      answers: cleanedAnswers,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    );
+
+    final idx = _tadabburItems.indexWhere((t) => t.ayahKey == key);
+    if (idx != -1) {
+      _tadabburItems[idx] = item;
+    } else {
+      _tadabburItems.add(item);
+    }
+    _tadabburLookup[key] = item;
+
+    notifyListeners();
+    await saveToDisk();
+  }
+
+  Future<void> deleteTadabbur(int surahNumber, int ayahNumber) async {
+    final key = '$surahNumber:$ayahNumber';
+    _tadabburItems.removeWhere((t) => t.ayahKey == key);
+    _tadabburLookup.remove(key);
+    notifyListeners();
+    await saveToDisk();
+  }
 
   // ==========================================
   // SNAPSHOT EXPORT / RESTORE
@@ -608,6 +714,7 @@ class UserDataStore extends ChangeNotifier {
     bool settings = true,
     bool reminders = true,
     bool ayahLinks = true,
+    bool tadabbur = true,
   }) {
     return {
       'app': 'Tadbeer',
@@ -620,6 +727,7 @@ class UserDataStore extends ChangeNotifier {
       if (settings) 'settings': _settings.toJson(),
       if (reminders) 'reminders': _reminders.map((r) => r.toJson()).toList(),
       if (ayahLinks) 'ayahLinks': _ayahLinks.map((l) => l.toJson()).toList(),
+      if (tadabbur) 'tadabbur': _tadabburItems.map((t) => t.toJson()).toList(),
     };
   }
 

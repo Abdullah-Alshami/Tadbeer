@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../app/localization.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/storage/user_data_store.dart';
-import '../../core/utils/arabic_search_normalizer.dart';
 import '../backup/backup_screen.dart';
 import '../reminders/reminders_screen.dart';
 
@@ -121,67 +120,49 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // 2. القراءة (Reading Settings)
+                // 2. القراءة ومصحف المدينة
                 _buildSectionHeader(l10n.readingSettings),
                 _buildCard(
                   isDark: isDark,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    child: Row(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              l10n.fontSize,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              ArabicSearchNormalizer.toArabicDigits(
-                                settings.quranFontSize.round(),
-                              ),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.olive,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Slider(
-                          value: settings.quranFontSize,
-                          min: 18.0,
-                          max: 34.0,
-                          divisions: 8,
-                          activeColor: AppColors.olive,
-                          onChanged: (val) {
-                            UserDataStore.instance.updateSettings(
-                              settings.copyWith(quranFontSize: val),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.darkBackground
-                                : AppColors.comsilkLight,
-                            borderRadius: BorderRadius.circular(8),
+                            color: AppColors.olive.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
                           ),
-                          child: Text(
-                            '﴿ بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ﴾',
-                            textAlign: TextAlign.center,
-                            textDirection: TextDirection.rtl,
-                            style: TextStyle(
-                              fontFamily: 'AmiriQuran',
-                              fontSize: settings.quranFontSize,
-                              color: isDark
-                                  ? AppColors.nightQuranText
-                                  : AppColors.dayQuranText,
-                            ),
+                          child: const Icon(
+                            Icons.menu_book_rounded,
+                            color: AppColors.olive,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'مصحف المدينة النبوية',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'تخطيط مجمع الملك فهد (١٤٢١هـ) — ٦٠٤ صفحات ثابتة',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? AppColors.nightSubtitle
+                                      : AppColors.oliveDark,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

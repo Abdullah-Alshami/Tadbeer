@@ -11,15 +11,7 @@ import '../search/search_screen.dart';
 import 'quran_page_view.dart';
 import 'quran_side_menu.dart';
 
-/// Fullscreen Quran reading experience for Tadbeer.
-///
-/// EDUCATIONAL NOTE:
-/// Quran Reading Screen Architecture:
-/// 1. Backed by a standard Flutter [PageView.builder] mapped to 604 pages.
-/// 2. RTL support is inherent to Arabic text directionality.
-/// 3. The current page position is automatically persisted to [UserDataStore]
-///    as the user swipes, so exiting the app preserves the exact reading spot.
-/// 4. Supports deep navigation to a specific surah and ayah (e.g., from search or bookmarks).
+/// Fullscreen Medina Mushaf reading experience for Tadbeer (1421H layout, 604 pages).
 class QuranScreen extends StatefulWidget {
   final int? initialPage;
   final int? targetSurahNumber;
@@ -39,21 +31,35 @@ class QuranScreen extends StatefulWidget {
 class _QuranScreenState extends State<QuranScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late PageController _pageController;
-  late int _currentPage;
+  late int _currentPageIndex;
   Ayah? _activeSelectedAyah;
 
   @override
   void initState() {
     super.initState();
+    final repo = QuranRepository.instance;
     final saved = UserDataStore.instance.readingPosition;
-    _currentPage = widget.initialPage ?? saved.page;
-    if (_currentPage < 1 || _currentPage > 604) _currentPage = 1;
 
-    // 0-indexed PageView controller
-    _pageController = PageController(initialPage: _currentPage - 1);
+    int startPage = widget.initialPage ?? saved.page;
+    if (widget.targetSurahNumber != null && widget.targetAyahNumber != null) {
+      final targetAyah = repo.getAyah(
+        widget.targetSurahNumber!,
+        widget.targetAyahNumber!,
+      );
+      if (targetAyah != null) {
+        startPage = targetAyah.page;
+        _activeSelectedAyah = targetAyah;
+      }
+    }
+
+    startPage = startPage.clamp(1, 604);
+    _currentPageIndex = startPage - 1;
+    _pageController = PageController(initialPage: _currentPageIndex);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _persistCurrentPagePosition(_currentPage);
+      if (mounted) {
+        _persistCurrentPagePosition(startPage);
+      }
     });
   }
 
@@ -64,29 +70,61 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   void _onPageChanged(int index) {
-    final pageNum = index + 1;
+    if (index < 0 || index >= 604) return;
     setState(() {
-      _currentPage = pageNum;
+      _currentPageIndex = index;
       _activeSelectedAyah = null;
     });
-    _persistCurrentPagePosition(pageNum);
+    _persistCurrentPagePosition(index + 1);
   }
 
-  void _persistCurrentPagePosition(int pageNum) {
-    final quranPage = QuranRepository.instance.getPage(pageNum);
-    if (quranPage.ayahs.isNotEmpty) {
-      final firstAyah = quranPage.ayahs.first;
-      UserDataStore.instance.saveReadingPosition(
-        page: pageNum,
-        surahNumber: firstAyah.surahNumber,
-        ayahNumber: firstAyah.ayahNumber,
-      );
+  void _persistCurrentPagePosition(int pageNumber) {
+    final repo = QuranRepository.instance;
+    final layout = repo.getMushafPage(pageNumber);
+    final firstWord = layout.firstWord;
+
+    int surahNum = 1;
+    int ayahNum = 1;
+    if (firstWord != null) {
+      surahNum = firstWord.surah;
+      ayahNum = firstWord.ayah;
+    } else if (layout.lines.isNotEmpty &&
+        layout.lines.first.surahNumber != null) {
+      surahNum = layout.lines.first.surahNumber!;
+      ayahNum = 1;
     }
+
+    UserDataStore.instance.saveReadingPosition(
+      page: pageNumber,
+      surahNumber: surahNum,
+      ayahNumber: ayahNum,
+    );
   }
 
-  void _jumpToPage(int pageNum) {
-    if (pageNum < 1 || pageNum > 604) return;
-    _pageController.jumpToPage(pageNum - 1);
+  void _jumpToMushafPage(int mushafPage) {
+    final target = mushafPage.clamp(1, 604);
+    _pageController.jumpToPage(target - 1);
+  }
+
+  void _jumpToAyah(Ayah ayah) {
+    _pageController.jumpToPage(ayah.page - 1);
+    setState(() {
+      _activeSelectedAyah = ayah;
+    });
+  }
+
+  Future<void> _handleAyahTap(Ayah ayah) async {
+    setState(() {
+      _activeSelectedAyah = ayah;
+    });
+
+    await AyahActionSheet.show(context, ayah);
+
+    if (mounted) {
+      setState(() {
+        _activeSelectedAyah = null;
+      });
+    }
   }
 
   Future<void> _handleAyahLongPress(Ayah ayah) async {
@@ -104,28 +142,26 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   Future<void> _openSearch() async {
-    final pickedAyah = await Navigator.push<Ayah>(
-      context,
+    final selectedAyah = await Navigator.of(context).push<Ayah>(
       MaterialPageRoute(
         builder: (_) => const SearchScreen(returnToCaller: true),
       ),
     );
-
-    if (pickedAyah != null && mounted) {
-      _jumpToPage(pickedAyah.page);
+    if (selectedAyah != null && mounted) {
+      _jumpToAyah(selectedAyah);
     }
   }
 
   void _showJumpToPageDialog() {
     final l10n = context.l10n;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final controller = TextEditingController(text: '$_currentPage');
+    final controller = TextEditingController(text: '${_currentPageIndex + 1}');
 
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: isDark
-            ? AppColors.darkBackground
+            ? AppColors.darkSurface
             : AppColors.comsilkLight,
         title: Text(
           l10n.jumpToPage,
@@ -136,22 +172,21 @@ class _QuranScreenState extends State<QuranScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              l10n.enterPageNumber,
+              'أدخل رقم الصفحة بين ١ و ٦٠٤',
               style: TextStyle(
                 fontSize: 13,
-                color: isDark ? AppColors.nightSubtitle : AppColors.daySubtitle,
+                color: isDark ? AppColors.nightSubtitle : AppColors.oliveDark,
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
-              keyboardType: TextInputType.number,
               autofocus: true,
+              keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
-                filled: true,
-                fillColor: isDark ? AppColors.darkSurface : AppColors.comsilk,
+                hintText: '1 - 604',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide(
@@ -174,7 +209,7 @@ class _QuranScreenState extends State<QuranScreen> {
               final val = int.tryParse(controller.text.trim());
               if (val != null && val >= 1 && val <= 604) {
                 Navigator.pop(dialogCtx);
-                _jumpToPage(val);
+                _jumpToMushafPage(val);
               }
             },
             style: ElevatedButton.styleFrom(
@@ -195,64 +230,62 @@ class _QuranScreenState extends State<QuranScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final repo = QuranRepository.instance;
-    final userSettings = UserDataStore.instance.settings;
+    final currentPageNumber = _currentPageIndex + 1;
+    final pageLayout = repo.getMushafPage(currentPageNumber);
 
-    final currentPageData = repo.getPage(_currentPage);
-    final firstSurah = repo.getSurah(currentPageData.surahNumbers.first);
-    final surahTitle = 'سورة ${firstSurah.name}';
+    final surahs = pageLayout.surahNumbers;
+    final firstSurahNumber = surahs.isNotEmpty
+        ? surahs.first
+        : (pageLayout.firstWord?.surah ?? 1);
+    final surah = repo.getSurah(firstSurahNumber);
+    final surahTitle = 'سورة ${surah.name}';
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         key: _scaffoldKey,
         drawer: QuranSideMenu(
-          currentPage: _currentPage,
-          onPageSelected: _jumpToPage,
+          currentPage: currentPageNumber,
+          onPageSelected: _jumpToMushafPage,
         ),
         appBar: AppBar(
           leading: const BackButton(),
           title: Text(
-            '$surahTitle · ص ${ArabicSearchNormalizer.toArabicDigits(_currentPage)}',
+            '$surahTitle · ص ${ArabicSearchNormalizer.toArabicDigits(currentPageNumber)}',
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           actions: [
+            // Side menu / index
+            IconButton(
+              icon: const Icon(Icons.menu_book),
+              tooltip: 'فهرس المصحف',
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
             // Quran Search Action
             IconButton(
               icon: const Icon(Icons.search),
               tooltip: l10n.search,
               onPressed: _openSearch,
             ),
-            // Popup menu for secondary actions (Jump to page, Index, Home)
+            // Popup menu for secondary actions
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               tooltip: l10n.more,
               onSelected: (val) {
                 if (val == 'jump') {
                   _showJumpToPageDialog();
-                } else if (val == 'index') {
-                  _scaffoldKey.currentState?.openDrawer();
                 } else if (val == 'home') {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 }
               },
-              itemBuilder: (ctx) => [
+              itemBuilder: (context) => [
                 PopupMenuItem(
                   value: 'jump',
                   child: Row(
                     children: [
-                      const Icon(Icons.find_in_page_outlined, size: 20),
+                      const Icon(Icons.swap_horiz, size: 20),
                       const SizedBox(width: 8),
                       Text(l10n.jumpToPage),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'index',
-                  child: Row(
-                    children: [
-                      Icon(Icons.menu_book_outlined, size: 20),
-                      SizedBox(width: 8),
-                      Text('فهرس السور والأجزاء'),
                     ],
                   ),
                 ),
@@ -270,24 +303,20 @@ class _QuranScreenState extends State<QuranScreen> {
             ),
           ],
         ),
-        body: ListenableBuilder(
-          listenable: UserDataStore.instance,
-          builder: (context, _) {
-            return PageView.builder(
-              controller: _pageController,
-              itemCount: 604,
-              onPageChanged: _onPageChanged,
-              itemBuilder: (context, index) {
-                final page = repo.getPage(index + 1);
-                return QuranPageView(
-                  page: page,
-                  fontSize: userSettings.quranFontSize,
-                  selectedAyah: _activeSelectedAyah,
-                  onAyahLongPress: _handleAyahLongPress,
-                );
-              },
-            );
-          },
+        body: SafeArea(
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: 604,
+            onPageChanged: _onPageChanged,
+            itemBuilder: (context, index) {
+              return QuranPageView(
+                pageNumber: index + 1,
+                selectedAyah: _activeSelectedAyah,
+                onAyahTap: _handleAyahTap,
+                onAyahLongPress: _handleAyahLongPress,
+              );
+            },
+          ),
         ),
       ),
     );

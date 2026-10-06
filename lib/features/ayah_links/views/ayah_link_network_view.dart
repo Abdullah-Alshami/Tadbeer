@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
 import '../../../data/ayah_links/ayah_link_model.dart';
 import '../../../data/ayah_links/ayah_link_repository.dart';
@@ -105,8 +106,11 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     final count = verses.length;
     if (count == 0) return;
 
+    final fontSize = UserDataStore.instance.settings.ayahLinkFontSize;
+    final scaleRatio = (fontSize / 18.0).clamp(0.85, 1.45);
+
     if (count <= 8) {
-      const radius = 320.0;
+      final radius = 320.0 * scaleRatio;
       for (int i = 0; i < count; i++) {
         final angle = (2 * math.pi * i / count) - (math.pi / 2);
         final x = _centerCoord + radius * math.cos(angle);
@@ -117,7 +121,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
       final innerCount = math.min(6, (count / 2).ceil());
       final outerCount = count - innerCount;
 
-      const r1 = 280.0;
+      final r1 = 280.0 * scaleRatio;
       for (int i = 0; i < innerCount; i++) {
         final angle = (2 * math.pi * i / innerCount) - (math.pi / 2);
         final x = _centerCoord + r1 * math.cos(angle);
@@ -125,7 +129,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
         _positions[verses[i].ayahKey] = Offset(x, y);
       }
 
-      const r2 = 480.0;
+      final r2 = 490.0 * scaleRatio;
       for (int i = 0; i < outerCount; i++) {
         final angle = (2 * math.pi * i / outerCount) - (math.pi / 3);
         final x = _centerCoord + r2 * math.cos(angle);
@@ -138,10 +142,13 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
       int ringIndex = 0;
 
       while (assigned < count) {
-        final radius = 280.0 + (ringIndex * 190.0);
+        final radius = (280.0 + (ringIndex * 210.0)) * scaleRatio;
         // Estimate how many nodes fit comfortably on this circumference
         final circumference = 2 * math.pi * radius;
-        final capacity = math.max(6, (circumference / 230.0).floor());
+        final capacity = math.max(
+          6,
+          (circumference / (240.0 * scaleRatio)).floor(),
+        );
         final inThisRing = math.min(capacity, count - assigned);
 
         for (int i = 0; i < inThisRing; i++) {
@@ -375,54 +382,60 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
                     ),
                   const SizedBox(height: 12),
 
-                  // Reflection note (if any)
-                  if (verse.note != null && verse.note!.isNotEmpty) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.olive.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: AppColors.olive.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
+                  // Reflection note (if any, from link, note or tadabbur)
+                  () {
+                    final effectiveNote = verse.getEffectiveNote();
+                    if (effectiveNote != null && effectiveNote.isNotEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.olive.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.olive.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.sticky_note_2_outlined,
-                                size: 16,
-                                color: AppColors.olive,
+                              const Row(
+                                children: [
+                                  Icon(
+                                    Icons.sticky_note_2_outlined,
+                                    size: 16,
+                                    color: AppColors.olive,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'ملاحظة التدبر:',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.olive,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              SizedBox(width: 6),
+                              const SizedBox(height: 6),
                               Text(
-                                'ملاحظة التدبر:',
+                                effectiveNote,
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.olive,
+                                  fontSize: 13,
+                                  height: 1.5,
+                                  color: isDark
+                                      ? AppColors.nightSubtitle
+                                      : AppColors.daySubtitle,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            verse.note!,
-                            style: TextStyle(
-                              fontSize: 13,
-                              height: 1.5,
-                              color: isDark
-                                  ? AppColors.nightSubtitle
-                                  : AppColors.daySubtitle,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                  ],
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }(),
 
                   // Action Buttons Row
                   Row(
@@ -611,6 +624,8 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final verses = widget.link.verses;
+    final fontSize = UserDataStore.instance.settings.ayahLinkFontSize;
+    final nodeWidth = (fontSize * 11.5).clamp(195.0, 280.0);
 
     return Stack(
       children: [
@@ -664,8 +679,8 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
                 for (final verse in verses)
                   if (_positions.containsKey(verse.ayahKey))
                     Positioned(
-                      left: _positions[verse.ayahKey]!.dx - 95,
-                      top: _positions[verse.ayahKey]!.dy - 55,
+                      left: _positions[verse.ayahKey]!.dx - (nodeWidth / 2),
+                      top: _positions[verse.ayahKey]!.dy - 60,
                       child: _VerseCanvasNode(
                         verse: verse,
                         isDark: isDark,
@@ -910,14 +925,17 @@ class _VerseCanvasNode extends StatelessWidget {
       verse.surahNumber,
       verse.ayahNumber,
     );
-    final hasNote = verse.note != null && verse.note!.isNotEmpty;
+    final effectiveNote = verse.getEffectiveNote();
+    final hasNote = effectiveNote != null && effectiveNote.isNotEmpty;
+    final fontSize = UserDataStore.instance.settings.ayahLinkFontSize;
+    final nodeWidth = (fontSize * 11.5).clamp(195.0, 280.0);
 
     return GestureDetector(
       onTap: onTap,
       onPanUpdate: (details) => onPanUpdate(details.delta),
       onPanEnd: (_) => onPanEnd(),
       child: Container(
-        width: 190,
+        width: nodeWidth,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.comsilkLight,
@@ -972,18 +990,61 @@ class _VerseCanvasNode extends StatelessWidget {
             if (ayah != null)
               Text(
                 '﴿ ${ayah.text} ﴾',
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'AmiriQuran',
-                  fontSize: 12,
+                  fontSize: fontSize * 0.78,
                   height: 1.6,
                   color: isDark
                       ? AppColors.nightQuranText
                       : AppColors.dayQuranText,
                 ),
               ),
+
+            // Note snippet under verse (if present, compact otherwise)
+            if (hasNote) ...[
+              const SizedBox(height: 8),
+              Divider(
+                height: 1,
+                color: isDark
+                    ? AppColors.darkSurfaceVariant
+                    : const Color(0xFFDDD7C8),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    Icons.edit_note,
+                    size: 13,
+                    color: isDark ? AppColors.oliveSoft : AppColors.olive,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'ملاحظتي',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.oliveSoft : AppColors.olive,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                effectiveNote,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.4,
+                  color: isDark
+                      ? AppColors.nightSubtitle
+                      : AppColors.daySubtitle,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1131,4 +1192,3 @@ extension on Matrix4 {
     scaleByDouble(s, s, 1.0, 1.0);
   }
 }
-

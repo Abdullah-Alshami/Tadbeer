@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
 import '../../../data/ayah_links/ayah_link_model.dart';
 import '../../../data/ayah_links/ayah_link_repository.dart';
@@ -217,7 +218,9 @@ class AyahLinkOrderedView extends StatelessWidget {
                 verse.surahNumber,
                 verse.ayahNumber,
               );
-              final hasNote = verse.note != null && verse.note!.isNotEmpty;
+              final effectiveNote = verse.getEffectiveNote();
+              final hasNote = effectiveNote != null && effectiveNote.isNotEmpty;
+              final fontSize = UserDataStore.instance.settings.ayahLinkFontSize;
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 14),
@@ -358,7 +361,7 @@ class AyahLinkOrderedView extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'AmiriQuran',
-                            fontSize: 17,
+                            fontSize: fontSize,
                             height: 1.8,
                             color: isDark
                                 ? AppColors.nightQuranText
@@ -390,7 +393,7 @@ class AyahLinkOrderedView extends StatelessWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                verse.note!,
+                                effectiveNote,
                                 style: TextStyle(
                                   fontSize: 12,
                                   height: 1.5,
