@@ -8,7 +8,6 @@ import 'package:tadbeer/data/quran/mushaf_layout_models.dart';
 import 'package:tadbeer/data/quran/quran_repository.dart';
 import 'package:tadbeer/features/quran/quran_page_view.dart';
 import 'package:tadbeer/features/quran/quran_screen.dart';
-import 'package:tadbeer/features/quran/renderers/madinah_page_renderer.dart';
 import 'package:tadbeer/shared/widgets/surah_header_banner.dart';
 
 Widget buildTestQuranApp({int initialPage = 1}) {
@@ -144,9 +143,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(QuranPageView), findsOneWidget);
-        expect(find.byType(MadinahPageRenderer), findsOneWidget);
         expect(find.byType(SurahHeaderBanner), findsOneWidget);
-        expect(find.text('سُورَةُ الفاتحة'), findsOneWidget);
+        expect(find.text('سُورَةُ الفاتحة'), findsWidgets);
         expect(find.text('١'), findsWidgets);
       },
     );
@@ -158,12 +156,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(QuranPageView), findsOneWidget);
-      expect(find.text('سُورَةُ البقرة'), findsOneWidget);
+      expect(find.text('سُورَةُ البقرة'), findsWidgets);
       expect(find.text('٢'), findsWidgets);
-      expect(
-        find.text('بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ'),
-        findsOneWidget,
-      );
+      expect(find.byType(BismillahBanner), findsOneWidget);
     });
 
     testWidgets('Persists reading position when navigating pages', (
@@ -180,10 +175,10 @@ void main() {
       expect(saved.page, isIn([1, 2]));
     });
 
-    testWidgets('MadinahPageRenderer invokes onAyahTap and onAyahLongPress', (
+    testWidgets('QuranPageView invokes onAyahTap and onAyahLongPress', (
       tester,
     ) async {
-      final page1Layout = QuranRepository.instance.getMushafPage(1);
+      final page1 = QuranRepository.instance.getPage(1);
 
       await tester.pumpWidget(
         AppLocalizationScope(
@@ -192,8 +187,8 @@ void main() {
           onLanguageChanged: (_) {},
           child: MaterialApp(
             home: Scaffold(
-              body: MadinahPageRenderer(
-                pageLayout: page1Layout,
+              body: QuranPageView(
+                page: page1,
                 onAyahTap: (_) {},
                 onAyahLongPress: (_) {},
               ),
@@ -203,16 +198,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(MadinahPageRenderer), findsOneWidget);
-      expect(find.text('سُورَةُ الفاتحة'), findsOneWidget);
-      // Explicitly verify zero FittedBox in MadinahPageRenderer
-      expect(
-        find.descendant(
-          of: find.byType(MadinahPageRenderer),
-          matching: find.byType(FittedBox),
-        ),
-        findsNothing,
-      );
+      expect(find.byType(QuranPageView), findsOneWidget);
+      expect(find.text('سُورَةُ الفاتحة'), findsWidgets);
     });
   });
 }

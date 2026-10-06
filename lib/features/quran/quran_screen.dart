@@ -80,25 +80,15 @@ class _QuranScreenState extends State<QuranScreen> {
 
   void _persistCurrentPagePosition(int pageNumber) {
     final repo = QuranRepository.instance;
-    final layout = repo.getMushafPage(pageNumber);
-    final firstWord = layout.firstWord;
-
-    int surahNum = 1;
-    int ayahNum = 1;
-    if (firstWord != null) {
-      surahNum = firstWord.surah;
-      ayahNum = firstWord.ayah;
-    } else if (layout.lines.isNotEmpty &&
-        layout.lines.first.surahNumber != null) {
-      surahNum = layout.lines.first.surahNumber!;
-      ayahNum = 1;
+    final page = repo.getPage(pageNumber);
+    if (page.ayahs.isNotEmpty) {
+      final firstAyah = page.ayahs.first;
+      UserDataStore.instance.saveReadingPosition(
+        page: pageNumber,
+        surahNumber: firstAyah.surahNumber,
+        ayahNumber: firstAyah.ayahNumber,
+      );
     }
-
-    UserDataStore.instance.saveReadingPosition(
-      page: pageNumber,
-      surahNumber: surahNum,
-      ayahNumber: ayahNum,
-    );
   }
 
   void _jumpToMushafPage(int mushafPage) {
@@ -231,12 +221,11 @@ class _QuranScreenState extends State<QuranScreen> {
     final l10n = context.l10n;
     final repo = QuranRepository.instance;
     final currentPageNumber = _currentPageIndex + 1;
-    final pageLayout = repo.getMushafPage(currentPageNumber);
+    final currentPageData = repo.getPage(currentPageNumber);
 
-    final surahs = pageLayout.surahNumbers;
-    final firstSurahNumber = surahs.isNotEmpty
-        ? surahs.first
-        : (pageLayout.firstWord?.surah ?? 1);
+    final firstSurahNumber = currentPageData.surahNumbers.isNotEmpty
+        ? currentPageData.surahNumbers.first
+        : 1;
     final surah = repo.getSurah(firstSurahNumber);
     final surahTitle = 'سورة ${surah.name}';
 
@@ -309,7 +298,9 @@ class _QuranScreenState extends State<QuranScreen> {
             itemCount: 604,
             onPageChanged: _onPageChanged,
             itemBuilder: (context, index) {
+              final page = repo.getPage(index + 1);
               return QuranPageView(
+                page: page,
                 pageNumber: index + 1,
                 selectedAyah: _activeSelectedAyah,
                 onAyahTap: _handleAyahTap,
