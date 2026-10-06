@@ -20,7 +20,7 @@ class MadinahPageRenderer extends StatelessWidget {
   final void Function(Ayah)? onAyahLongPress;
 
   /// Fixed, standard Quran typography font size uniform across all 604 pages.
-  static const double quranFontSize = 20.0;
+  static const double quranFontSize = 21;
 
   /// Constant line rhythm vertical gap between lines.
   static const double lineRhythmGap = 2.0;
@@ -43,7 +43,7 @@ class MadinahPageRenderer extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.comsilkLight,
           borderRadius: BorderRadius.circular(12),
@@ -311,7 +311,7 @@ class MadinahPageRenderer extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'AmiriQuran',
               fontFamilyFallback: const ['Amiri'],
-              fontSize: quranFontSize,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
               color: isDark ? AppColors.comsilk : AppColors.oliveDark,
             ),
