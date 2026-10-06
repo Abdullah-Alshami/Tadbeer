@@ -10,6 +10,7 @@ import 'package:tadbeer/features/quran/data/quran_repository.dart';
 import 'package:tadbeer/features/quran/screens/quran_page_view.dart';
 import 'package:tadbeer/features/quran/renderers/mushaf_canvas.dart';
 import 'package:tadbeer/features/quran/renderers/mushaf_line_widget.dart';
+import 'package:tadbeer/features/quran/renderers/mushaf_word_widget.dart';
 import 'package:tadbeer/features/quran/widgets/surah_header_banner.dart';
 
 Widget buildTestFrame(Widget child) {
@@ -65,8 +66,18 @@ void main() {
       expect(find.byType(MushafLineWidget), findsNWidgets(8));
       expect(find.byType(SurahHeaderBanner), findsOneWidget);
       expect(find.text('سُورَةُ الفاتحة'), findsWidgets);
-      expect(find.text('بِسْمِ'), findsOneWidget);
-      expect(find.text('ٱلضَّآلِّينَ'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is MushafWordWidget && w.word.text == 'بِسْمِ',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is MushafWordWidget && w.word.text == 'ٱلضَّآلِّينَ',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
@@ -96,8 +107,18 @@ void main() {
         expect(find.byType(SurahHeaderBanner), findsOneWidget);
         expect(find.byType(BismillahBanner), findsOneWidget);
         expect(find.text('سُورَةُ البقرة'), findsWidgets);
-        expect(find.text('الٓمٓ'), findsOneWidget);
-        expect(find.text('ٱلْمُفْلِحُونَ'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is MushafWordWidget && w.word.text == 'الٓمٓ',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is MushafWordWidget && w.word.text == 'ٱلْمُفْلِحُونَ',
+          ),
+          findsOneWidget,
+        );
       },
     );
 
@@ -131,8 +152,18 @@ void main() {
 
         expect(find.byType(MushafCanvas), findsOneWidget);
         expect(find.byType(MushafLineWidget), findsNWidgets(15));
-        expect(find.text('إِنَّ'), findsWidgets);
-        expect(find.text('تُنذِرْهُمْ'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is MushafWordWidget && w.word.text == 'إِنَّ',
+          ),
+          findsWidgets,
+        );
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is MushafWordWidget && w.word.text == 'تُنذِرْهُمْ',
+          ),
+          findsOneWidget,
+        );
       },
     );
 
@@ -268,7 +299,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap on word "بِسْمِ" (Ayah 1:1, stable ID 1)
-        await tester.tap(find.text('بِسْمِ'));
+        await tester.tap(
+          find.byWidgetPredicate(
+            (w) => w is MushafWordWidget && w.word.text == 'بِسْمِ',
+          ),
+        );
         await tester.pumpAndSettle();
         expect(tappedAyah, isNotNull);
         expect(tappedAyah!.id, 1);
@@ -276,7 +311,11 @@ void main() {
         expect(tappedAyah!.ayahNumber, 1);
 
         // Long press on word "ٱلْحَمْدُ" (Ayah 1:2, stable ID 2)
-        await tester.longPress(find.text('ٱلْحَمْدُ'));
+        await tester.longPress(
+          find.byWidgetPredicate(
+            (w) => w is MushafWordWidget && w.word.text == 'ٱلْحَمْدُ',
+          ),
+        );
         await tester.pumpAndSettle();
         expect(longPressedAyah, isNotNull);
         expect(longPressedAyah!.id, 2);

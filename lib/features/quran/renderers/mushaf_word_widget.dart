@@ -4,13 +4,14 @@ import '../../../app/theme.dart';
 import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
 import '../data/mushaf_layout_models.dart';
+import '../data/qcf_font_manager.dart';
 import '../data/quran_models.dart';
 import '../data/quran_repository.dart';
 import '../widgets/ayah_action_sheet.dart';
 import '../../notes/note_editor_screen.dart';
 
 /// Renders a single discrete Quran word token or Ayah end marker
-/// strictly according to authentic Madinah Mushaf layout specifications.
+/// strictly according to authentic Madinah Mushaf QCF V2 specifications.
 class MushafWordWidget extends StatelessWidget {
   final MushafWord word;
   final Ayah? selectedAyah;
@@ -18,7 +19,7 @@ class MushafWordWidget extends StatelessWidget {
   final ValueChanged<Ayah>? onAyahLongPress;
 
   /// Fixed, standard Quran typography font size uniform across all 604 pages.
-  static const double quranFontSize = 18.0;
+  static const double quranFontSize =20;
 
   const MushafWordWidget({
     super.key,
@@ -78,6 +79,9 @@ class MushafWordWidget extends StatelessWidget {
         ? Colors.white
         : AppColors.mushafQuranText;
 
+    final displayText = word.glyph.isNotEmpty ? word.glyph : word.text;
+    final fontFamily = QcfFontManager.fontFamilyForPage(word.pageNumber);
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
@@ -98,14 +102,13 @@ class MushafWordWidget extends StatelessWidget {
         color: backgroundColor,
         padding: const EdgeInsets.symmetric(horizontal: 0.5),
         child: Text(
-          word.text,
+          displayText,
           textAlign: TextAlign.center,
           textDirection: TextDirection.rtl,
           maxLines: 1,
           softWrap: false,
           style: TextStyle(
-            fontFamily: 'AmiriQuran',
-            fontFamilyFallback: const ['DigitalKhatt', 'Amiri'],
+            fontFamily: fontFamily,
             fontSize: quranFontSize,
             color: textColor,
             height: 1.25,
@@ -135,6 +138,11 @@ class MushafWordWidget extends StatelessWidget {
         ? AppColors.darkAccentGold
         : AppColors.lightAccentGold;
 
+    final displayRosette = word.glyph.isNotEmpty
+        ? word.glyph
+        : ' ﴿$ayahNumberText﴾ ';
+    final fontFamily = QcfFontManager.fontFamilyForPage(word.pageNumber);
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
@@ -151,29 +159,45 @@ class MushafWordWidget extends StatelessWidget {
           AyahActionSheet.show(context, ayah);
         }
       },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
         children: [
-          // Bookmark indicator icon if bookmarked
+          // Authentic QCF V2 Ayah end rosette glyph
+          Text(
+            displayRosette,
+            textDirection: TextDirection.rtl,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: quranFontSize,
+              fontWeight: FontWeight.normal,
+              color: glyphColor,
+              height: 1.25,
+            ),
+          ),
+
+          // Bookmark indicator icon placed above rosette without adding line width
           if (isBookmarked)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 1.0),
-              child: Icon(Icons.bookmark, size: 11, color: AppColors.olive),
+            Positioned(
+              top: -6,
+              child: Icon(Icons.bookmark, size: 10, color: AppColors.olive),
             ),
 
-          // Note indicator icon if note exists
+          // Note indicator icon placed below rosette without adding line width
           if (notes.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => NoteEditorScreen(existingNote: notes.first),
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 1.0),
+            Positioned(
+              bottom: -6,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          NoteEditorScreen(existingNote: notes.first),
+                    ),
+                  );
+                },
                 child: Container(
                   padding: const EdgeInsets.all(1.0),
                   decoration: BoxDecoration(
@@ -182,28 +206,12 @@ class MushafWordWidget extends StatelessWidget {
                   ),
                   child: Icon(
                     Icons.sticky_note_2_outlined,
-                    size: 10,
+                    size: 9,
                     color: isDark ? AppColors.oliveSoft : AppColors.olive,
                   ),
                 ),
               ),
             ),
-
-          // Authentic ornate Ayah end glyph ﴿١﴾
-          Text(
-            ' ﴿$ayahNumberText﴾ ',
-            textDirection: TextDirection.rtl,
-            maxLines: 1,
-            softWrap: false,
-            style: TextStyle(
-              fontFamily: 'AmiriQuran',
-              fontFamilyFallback: const ['DigitalKhatt', 'Amiri'],
-              fontSize: quranFontSize,
-              fontWeight: FontWeight.bold,
-              color: glyphColor,
-              height: 1.25,
-            ),
-          ),
         ],
       ),
     );

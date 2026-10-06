@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/utils/arabic_search_normalizer.dart';
 import 'mushaf_layout_models.dart';
+import 'qcf_glyph_service.dart';
 import 'quran_models.dart';
 
 /// Repository providing verified, authentic Uthmani Quran data for Tadbeer.
@@ -71,6 +72,9 @@ class QuranRepository {
       }
     }
 
+    // Initialize authentic King Fahd Complex QCF V2 glyph engine
+    await QcfGlyphService.instance.init();
+
     // Load authentic Madinah Mushaf V2 (1421H) Word -> Line -> Page layout
     final layoutString = await rootBundle.loadString(
       'assets/quran/mushaf_layout.json',
@@ -79,7 +83,53 @@ class QuranRepository {
     final rawLayoutPages = layoutData['pages'] as List<dynamic>;
     _mushafPages.clear();
     for (final lp in rawLayoutPages) {
-      _mushafPages.add(MushafPageLayout.fromJson(lp as Map<String, dynamic>));
+      final pageLayout = MushafPageLayout.fromJson(lp as Map<String, dynamic>);
+
+      // Group all text words on this page by ayah so that each ayah's complete
+      // word sequence (including cross-line spans and the end rosette) is enriched
+      // with its authentic QCF V2 glyphs.
+      final wordsByAyah = <String, List<MushafWord>>{};
+      for (final line in pageLayout.lines) {
+        if (line.type == MushafLineType.text) {
+          for (final word in line.words) {
+            wordsByAyah.putIfAbsent(word.ayahKey, () => []).add(word);
+          }
+        }
+      }
+
+      final enrichedWordsByLine = <int, List<MushafWord>>{};
+      for (final entry in wordsByAyah.entries) {
+        final ayahKey = entry.key;
+        final ayahWords = entry.value;
+        final ayah = _ayahsByKey[ayahKey];
+        final ayahId = ayah?.id ?? 0;
+
+        final enriched = QcfGlyphService.instance.enrichAyahWords(
+          words: ayahWords,
+          pageNumber: pageLayout.pageNumber,
+          lineNumber: ayahWords.first.lineNumber,
+          ayahId: ayahId,
+        );
+
+        for (final w in enriched) {
+          enrichedWordsByLine.putIfAbsent(w.lineNumber, () => []).add(w);
+        }
+      }
+
+      final enrichedLines = <MushafLine>[];
+      for (final line in pageLayout.lines) {
+        if (line.type == MushafLineType.text) {
+          enrichedLines.add(
+            line.copyWith(
+              words: enrichedWordsByLine[line.lineNumber] ?? const [],
+            ),
+          );
+        } else {
+          enrichedLines.add(line);
+        }
+      }
+
+      _mushafPages.add(pageLayout.copyWith(lines: enrichedLines));
     }
 
     _isLoaded = true;

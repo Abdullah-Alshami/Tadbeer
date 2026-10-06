@@ -16,6 +16,11 @@ class MushafWord {
   final String text;
   final bool isAyahEnd;
   final int? ayahNumber;
+  final int pageNumber;
+  final int lineNumber;
+  final String glyph;
+  final int? glyphCode;
+  final int ayahId;
 
   const MushafWord({
     this.id = 0,
@@ -25,11 +30,58 @@ class MushafWord {
     required this.text,
     required this.isAyahEnd,
     this.ayahNumber,
+    this.pageNumber = 1,
+    this.lineNumber = 1,
+    this.glyph = '',
+    this.glyphCode,
+    this.ayahId = 0,
   });
 
   String get ayahKey => '$surah:$ayah';
 
-  factory MushafWord.fromJson(Map<String, dynamic> json) {
+  MushafWord copyWith({
+    int? id,
+    int? surah,
+    int? ayah,
+    int? position,
+    String? text,
+    bool? isAyahEnd,
+    int? ayahNumber,
+    int? pageNumber,
+    int? lineNumber,
+    String? glyph,
+    int? glyphCode,
+    int? ayahId,
+  }) {
+    return MushafWord(
+      id: id ?? this.id,
+      surah: surah ?? this.surah,
+      ayah: ayah ?? this.ayah,
+      position: position ?? this.position,
+      text: text ?? this.text,
+      isAyahEnd: isAyahEnd ?? this.isAyahEnd,
+      ayahNumber: ayahNumber ?? this.ayahNumber,
+      pageNumber: pageNumber ?? this.pageNumber,
+      lineNumber: lineNumber ?? this.lineNumber,
+      glyph: glyph ?? this.glyph,
+      glyphCode: glyphCode ?? this.glyphCode,
+      ayahId: ayahId ?? this.ayahId,
+    );
+  }
+
+  factory MushafWord.fromJson(
+    Map<String, dynamic> json, {
+    int pageNumber = 1,
+    int lineNumber = 1,
+    String glyph = '',
+    int? glyphCode,
+    int ayahId = 0,
+  }) {
+    final g = (json['glyph'] as String?) ?? glyph;
+    final code =
+        json['glyph_code'] as int? ??
+        (g.isNotEmpty ? g.codeUnitAt(0) : glyphCode);
+
     return MushafWord(
       id: json['id'] as int? ?? 0,
       surah: json['s'] as int,
@@ -38,6 +90,11 @@ class MushafWord {
       text: json['t'] as String,
       isAyahEnd: json['e'] as bool? ?? false,
       ayahNumber: json['n'] as int?,
+      pageNumber: json['page'] as int? ?? pageNumber,
+      lineNumber: json['line'] as int? ?? lineNumber,
+      glyph: g,
+      glyphCode: code,
+      ayahId: json['ayah_id'] as int? ?? ayahId,
     );
   }
 
@@ -49,6 +106,11 @@ class MushafWord {
     't': text,
     'e': isAyahEnd,
     if (ayahNumber != null) 'n': ayahNumber,
+    'page': pageNumber,
+    'line': lineNumber,
+    if (glyph.isNotEmpty) 'glyph': glyph,
+    if (glyphCode != null) 'glyph_code': glyphCode,
+    if (ayahId > 0) 'ayah_id': ayahId,
   };
 }
 
@@ -71,7 +133,27 @@ class MushafLine {
     this.words = const [],
   });
 
-  factory MushafLine.fromJson(Map<String, dynamic> json) {
+  MushafLine copyWith({
+    int? lineNumber,
+    MushafLineType? type,
+    int? surahNumber,
+    bool? isCentered,
+    int? firstWordId,
+    int? lastWordId,
+    List<MushafWord>? words,
+  }) {
+    return MushafLine(
+      lineNumber: lineNumber ?? this.lineNumber,
+      type: type ?? this.type,
+      surahNumber: surahNumber ?? this.surahNumber,
+      isCentered: isCentered ?? this.isCentered,
+      firstWordId: firstWordId ?? this.firstWordId,
+      lastWordId: lastWordId ?? this.lastWordId,
+      words: words ?? this.words,
+    );
+  }
+
+  factory MushafLine.fromJson(Map<String, dynamic> json, {int pageNumber = 1}) {
     final typeStr = (json['line_type'] ?? json['type']) as String;
     final type = switch (typeStr) {
       'surah_name' || 'header' => MushafLineType.header,
@@ -79,10 +161,17 @@ class MushafLine {
       _ => MushafLineType.text,
     };
 
+    final lineNum = (json['line_number'] ?? json['line']) as int;
     final rawWords = json['words'] as List<dynamic>?;
     final words = rawWords != null
         ? rawWords
-              .map((w) => MushafWord.fromJson(w as Map<String, dynamic>))
+              .map(
+                (w) => MushafWord.fromJson(
+                  w as Map<String, dynamic>,
+                  pageNumber: pageNumber,
+                  lineNumber: lineNum,
+                ),
+              )
               .toList(growable: false)
         : const <MushafWord>[];
 
@@ -94,7 +183,6 @@ class MushafLine {
         (words.isNotEmpty && words.last.id > 0 ? words.last.id : null);
 
     final isCent = (json['is_centered'] ?? json['centered']) as bool? ?? false;
-    final lineNum = (json['line_number'] ?? json['line']) as int;
 
     return MushafLine(
       lineNumber: lineNum,
@@ -135,14 +223,34 @@ class MushafPageLayout {
     required this.lines,
   });
 
+  MushafPageLayout copyWith({
+    int? pageNumber,
+    int? juzNumber,
+    int? totalLines,
+    List<MushafLine>? lines,
+  }) {
+    return MushafPageLayout(
+      pageNumber: pageNumber ?? this.pageNumber,
+      juzNumber: juzNumber ?? this.juzNumber,
+      totalLines: totalLines ?? this.totalLines,
+      lines: lines ?? this.lines,
+    );
+  }
+
   factory MushafPageLayout.fromJson(Map<String, dynamic> json) {
+    final pageNum = json['page'] as int;
     final rawLines = json['lines'] as List<dynamic>;
     final lines = rawLines
-        .map((l) => MushafLine.fromJson(l as Map<String, dynamic>))
+        .map(
+          (l) => MushafLine.fromJson(
+            l as Map<String, dynamic>,
+            pageNumber: pageNum,
+          ),
+        )
         .toList(growable: false);
 
     return MushafPageLayout(
-      pageNumber: json['page'] as int,
+      pageNumber: pageNum,
       juzNumber: json['juz'] as int,
       totalLines: json['totalLines'] as int,
       lines: lines,

@@ -119,8 +119,8 @@ void main() {
       // Check App Title
       expect(find.text('تَدْبِير'), findsOneWidget);
 
-      // Check 5 Main Sections (Quran appears on the action button and the navigation card)
-      expect(find.text('المصحف'), findsNWidgets(2));
+      // Check Main Sections
+      expect(find.text('المصحف'), findsOneWidget);
       expect(find.text('الملاحظات'), findsOneWidget);
       expect(find.text('المحفوظات'), findsOneWidget);
       expect(find.text('المميزة'), findsOneWidget);

@@ -74,6 +74,8 @@ flutter:
     - assets/quran/quran_data.json
     - assets/quran/mushaf_layout.json
     - assets/fonts/
+    - assets/quran/qcf_v2/fonts/
+    - assets/quran/qcf_v2/glyphs/
 
   fonts:
     - family: DigitalKhatt

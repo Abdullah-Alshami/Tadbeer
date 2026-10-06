@@ -15,10 +15,16 @@ import '../../features/settings/settings_screen.dart';
 
 /// Unified Side Drawer navigation menu.
 ///
-/// Follows the structured navigation layout:
-/// - Main Sections: Quran, Notes, Bookmarks, Highlights, Search
-/// - Divider
-/// - Secondary Sections: Reminders, Backup, Settings, About Tadbeer
+/// Organized to match the primary and secondary application hierarchy:
+/// - Header: Close button, App Title, and Tagline
+/// - 4 Main Sections:
+///   1. المصحف
+///   2. الأدعية
+///   3. الملاحظات
+///   4. روابط الآيات
+/// - Section Divider & Title: "أدوات إضافية"
+/// - 6 Secondary Sections:
+///   المحفوظات، المميزة، البحث، التذكيرات، النسخ الاحتياطي، الإعدادات
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
@@ -66,159 +72,268 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).colorScheme.primary;
 
-    return Drawer(
-      backgroundColor: isDark
-          ? AppColors.darkBackground
-          : AppColors.lightBackground,
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Drawer Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-                border: Border(
-                  bottom: BorderSide(color: AppColors.border(context)),
+    return Directionality(
+      textDirection: context.currentLanguage.direction,
+      child: Drawer(
+        backgroundColor: isDark
+            ? AppColors.darkBackground
+            : AppColors.lightBackground,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Drawer Header with Close button and Brand
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
                 ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: primaryColor.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: primaryColor.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.menu_book_rounded,
-                      color: primaryColor,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.appName,
-                        style: TextStyle(
-                          fontFamily: 'Amiri',
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                child: Row(
+                  children: [
+                    // Close 'X' Button
+                    Material(
+                      color: isDark
+                          ? AppColors.darkSurface
+                          : AppColors.lightSurface,
+                      shape: CircleBorder(
+                        side: BorderSide(
                           color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.lightPrimaryDark,
+                              ? AppColors.darkBorder
+                              : AppColors.lightBorder,
+                          width: 1,
                         ),
                       ),
-                      Text(
-                        l10n.appTagline,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => Navigator.of(context).pop(),
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(Icons.close_rounded, size: 20),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+
+                    // App Title & Tagline
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                l10n.appName,
+                                style: TextStyle(
+                                  fontFamily: 'Amiri',
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.lightPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.eco_rounded,
+                                size: 13,
+                                color: isDark
+                                    ? AppColors.darkPrimary
+                                    : AppColors.lightPrimary,
+                              ),
+                            ],
+                          ),
+                          Text(
+                            l10n.appTagline,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.lightTextSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Divider(
+                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                height: 1,
+                thickness: 1,
+              ),
+
+              // Navigation Items List
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  children: [
+                    // 1. المصحف
+                    _DrawerNavTile(
+                      icon: Icons.menu_book_rounded,
+                      title: l10n.quran,
+                      onTap: () {
+                        final pos = UserDataStore.instance.readingPosition;
+                        _navigate(context, QuranScreen(initialPage: pos.page));
+                      },
+                    ),
+
+                    // 2. الأدعية
+                    _DrawerNavTile(
+                      icon: Icons.front_hand_outlined,
+                      title: 'الأدعية',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: isDark
+                                ? AppColors.darkSurface
+                                : AppColors.lightSurface,
+                            content: Text(
+                              'قسم الأدعية قيد التطوير قريبًا بإذن الله',
+                              style: TextStyle(
+                                color: AppColors.textPrimary(context),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: AppColors.border(context),
+                              ),
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    ),
+
+                    // 3. الملاحظات
+                    _DrawerNavTile(
+                      icon: Icons.edit_note_rounded,
+                      title: l10n.notes,
+                      onTap: () => _navigate(context, const NotesScreen()),
+                    ),
+
+                    // 4. روابط الآيات
+                    _DrawerNavTile(
+                      icon: Icons.hub_outlined,
+                      title: l10n.ayahLinks,
+                      onTap: () => _navigate(context, const AyahLinksScreen()),
+                    ),
+
+                    // Section Divider & Label: "أدوات إضافية"
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        top: 14,
+                        bottom: 6,
+                        right: 12,
+                        left: 12,
+                      ),
+                      child: Text(
+                        'أدوات إضافية',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                           color: isDark
                               ? AppColors.darkTextSecondary
                               : AppColors.lightTextSecondary,
                         ),
                       ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                    ),
 
-            // Navigation Items List
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
+                    // Secondary Tools
+                    // 5. المحفوظات
+                    _DrawerNavTile(
+                      icon: Icons.bookmark_outline_rounded,
+                      title: l10n.bookmarks,
+                      isSecondary: true,
+                      onTap: () => _navigate(context, const BookmarksScreen()),
+                    ),
+
+                    // 6. المميزة
+                    _DrawerNavTile(
+                      icon: Icons.palette_outlined,
+                      title: l10n.highlights,
+                      isSecondary: true,
+                      onTap: () => _navigate(context, const HighlightsScreen()),
+                    ),
+
+                    // 7. البحث
+                    _DrawerNavTile(
+                      icon: Icons.search_rounded,
+                      title: l10n.search,
+                      isSecondary: true,
+                      onTap: () => _navigate(context, const SearchScreen()),
+                    ),
+
+                    // 8. التذكيرات
+                    _DrawerNavTile(
+                      icon: Icons.notifications_none_rounded,
+                      title: l10n.reminders,
+                      isSecondary: true,
+                      onTap: () => _navigate(context, const RemindersScreen()),
+                    ),
+
+                    // 9. النسخ الاحتياطي
+                    _DrawerNavTile(
+                      icon: Icons.cloud_upload_outlined,
+                      title: l10n.backup,
+                      isSecondary: true,
+                      onTap: () => _navigate(context, const BackupScreen()),
+                    ),
+
+                    // 10. الإعدادات
+                    _DrawerNavTile(
+                      icon: Icons.settings_outlined,
+                      title: l10n.settings,
+                      isSecondary: true,
+                      onTap: () => _navigate(context, const SettingsScreen()),
+                    ),
+
+                    const SizedBox(height: 6),
+                    Divider(
+                      color: isDark
+                          ? AppColors.darkBorder
+                          : AppColors.lightBorder,
+                      height: 1,
+                    ),
+                    const SizedBox(height: 6),
+
+                    // About
+                    _DrawerNavTile(
+                      icon: Icons.info_outline_rounded,
+                      title: l10n.about,
+                      isSecondary: true,
+                      onTap: () => _openAboutDialog(context),
+                    ),
+                  ],
                 ),
-                children: [
-                  // Main Sections
-                  _DrawerTile(
-                    icon: Icons.menu_book_rounded,
-                    title: l10n.quran,
-                    onTap: () {
-                      final pos = UserDataStore.instance.readingPosition;
-                      _navigate(context, QuranScreen(initialPage: pos.page));
-                    },
-                  ),
-                  _DrawerTile(
-                    icon: Icons.edit_note_rounded,
-                    title: l10n.notes,
-                    onTap: () => _navigate(context, const NotesScreen()),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.bookmark_rounded,
-                    title: l10n.bookmarks,
-                    onTap: () => _navigate(context, const BookmarksScreen()),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.palette_outlined,
-                    title: l10n.highlights,
-                    onTap: () => _navigate(context, const HighlightsScreen()),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.hub_outlined,
-                    title: l10n.ayahLinks,
-                    onTap: () => _navigate(context, const AyahLinksScreen()),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.search_rounded,
-                    title: l10n.search,
-                    onTap: () => _navigate(context, const SearchScreen()),
-                  ),
-
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Divider(height: 1),
-                  ),
-
-                  // Secondary Sections
-                  _DrawerTile(
-                    icon: Icons.alarm_rounded,
-                    title: l10n.reminders,
-                    onTap: () => _navigate(context, const RemindersScreen()),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.shield_outlined,
-                    title: l10n.backup,
-                    onTap: () => _navigate(context, const BackupScreen()),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.settings_outlined,
-                    title: l10n.settings,
-                    onTap: () => _navigate(context, const SettingsScreen()),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.info_outline_rounded,
-                    title: l10n.about,
-                    onTap: () => _openAboutDialog(context),
-                  ),
-                ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _DrawerTile extends StatelessWidget {
+class _DrawerNavTile extends StatelessWidget {
   final IconData icon;
   final String title;
+  final bool isSecondary;
   final VoidCallback onTap;
 
-  const _DrawerTile({
+  const _DrawerNavTile({
     required this.icon,
     required this.title,
+    this.isSecondary = false,
     required this.onTap,
   });
 
@@ -229,23 +344,39 @@ class _DrawerTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        dense: isSecondary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         leading: Icon(
           icon,
-          color: Theme.of(context).colorScheme.primary,
-          size: 22,
+          color: isSecondary
+              ? (isDark ? AppColors.darkAccentGold : AppColors.lightAccentGold)
+              : (isDark ? AppColors.darkPrimary : AppColors.lightPrimary),
+          size: isSecondary ? 20 : 22,
         ),
         title: Text(
           title,
           style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.nightQuranText : AppColors.dayQuranText,
+            fontSize: isSecondary ? 13.5 : 14.5,
+            fontWeight: isSecondary ? FontWeight.w500 : FontWeight.w600,
+            color: isDark
+                ? AppColors.darkTextPrimary
+                : AppColors.lightTextPrimary,
           ),
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios_rounded,
+          size: 13,
+          color:
+              (isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.lightTextSecondary)
+                  .withValues(alpha: 0.6),
         ),
         onTap: onTap,
         hoverColor: Theme.of(context).colorScheme.primary
-            .withValues(alpha: 0.1),
+            .withValues(alpha: 0.08),
+        splashColor: Theme.of(context).colorScheme.primary
+            .withValues(alpha: 0.12),
       ),
     );
   }

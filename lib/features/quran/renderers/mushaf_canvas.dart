@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
 import '../data/mushaf_layout_models.dart';
+import '../data/qcf_font_manager.dart';
 import '../data/quran_models.dart';
 import '../data/quran_repository.dart';
 import 'mushaf_line_widget.dart';
@@ -20,7 +21,7 @@ import 'mushaf_line_widget.dart';
 /// - Horizontal distribution: Centered when [is_centered] is true, fully justified at word level
 ///   when [is_centered] is false.
 /// - Zero text scaling, zero [FittedBox], zero [Transform.scale], uniform fixed font size.
-class MushafCanvas extends StatelessWidget {
+class MushafCanvas extends StatefulWidget {
   final MushafPageLayout pageLayout;
   final Ayah? selectedAyah;
   final ValueChanged<Ayah>? onAyahTap;
@@ -33,6 +34,35 @@ class MushafCanvas extends StatelessWidget {
     this.onAyahTap,
     this.onAyahLongPress,
   });
+
+  @override
+  State<MushafCanvas> createState() => _MushafCanvasState();
+}
+
+class _MushafCanvasState extends State<MushafCanvas> {
+  @override
+  void initState() {
+    super.initState();
+    _loadFont();
+  }
+
+  @override
+  void didUpdateWidget(covariant MushafCanvas oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pageLayout.pageNumber != widget.pageLayout.pageNumber) {
+      _loadFont();
+    }
+  }
+
+  void _loadFont() {
+    final page = widget.pageLayout.pageNumber;
+    if (!QcfFontManager.isPageLoaded(page)) {
+      QcfFontManager.loadPageFont(page).then((_) {
+        if (mounted) setState(() {});
+      });
+    }
+    QcfFontManager.preloadSurroundingPages(page);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +103,7 @@ class MushafCanvas extends StatelessWidget {
 
   Widget _buildPageHeader(BuildContext context, bool isDark) {
     final repo = QuranRepository.instance;
+    final pageLayout = widget.pageLayout;
     final surahs = pageLayout.surahNumbers;
     final firstSurahNumber = surahs.isNotEmpty
         ? surahs.first
@@ -124,7 +155,7 @@ class MushafCanvas extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          ArabicSearchNormalizer.toArabicDigits(pageLayout.pageNumber),
+          ArabicSearchNormalizer.toArabicDigits(widget.pageLayout.pageNumber),
           style: const TextStyle(
             fontFamily: 'Amiri',
             fontSize: 13,
@@ -137,6 +168,7 @@ class MushafCanvas extends StatelessWidget {
   }
 
   Widget _buildTextCanvas(BuildContext context, bool isDark) {
+    final pageLayout = widget.pageLayout;
     final isOpeningPage = pageLayout.lines.length < 15;
 
     if (isOpeningPage) {
@@ -162,9 +194,9 @@ class MushafCanvas extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: MushafLineWidget(
                     line: line,
-                    selectedAyah: selectedAyah,
-                    onAyahTap: onAyahTap,
-                    onAyahLongPress: onAyahLongPress,
+                    selectedAyah: widget.selectedAyah,
+                    onAyahTap: widget.onAyahTap,
+                    onAyahLongPress: widget.onAyahLongPress,
                   ),
                 ),
             ],
@@ -184,9 +216,9 @@ class MushafCanvas extends StatelessWidget {
           Expanded(
             child: MushafLineWidget(
               line: line,
-              selectedAyah: selectedAyah,
-              onAyahTap: onAyahTap,
-              onAyahLongPress: onAyahLongPress,
+              selectedAyah: widget.selectedAyah,
+              onAyahTap: widget.onAyahTap,
+              onAyahLongPress: widget.onAyahLongPress,
             ),
           ),
       ],
