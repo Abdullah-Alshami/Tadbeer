@@ -309,9 +309,9 @@ class MadinahPageRenderer extends StatelessWidget {
             text: markerText,
             recognizer: tapRecognizer,
             style: TextStyle(
-              fontFamily: 'DigitalKhatt',
-              fontFamilyFallback: const ['AmiriQuran', 'Amiri'],
-              fontSize: quranFontSize * 0.9,
+              fontFamily: 'AmiriQuran',
+              fontFamilyFallback: const ['Amiri'],
+              fontSize: quranFontSize,
               fontWeight: FontWeight.bold,
               color: isDark ? AppColors.comsilk : AppColors.oliveDark,
             ),
