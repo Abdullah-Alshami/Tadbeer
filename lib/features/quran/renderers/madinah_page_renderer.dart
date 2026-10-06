@@ -20,7 +20,7 @@ class MadinahPageRenderer extends StatelessWidget {
   final void Function(Ayah)? onAyahLongPress;
 
   /// Fixed, standard Quran typography font size uniform across all 604 pages.
-  static const double quranFontSize = 18.0;
+  static const double quranFontSize = 20.0;
 
   /// Constant line rhythm vertical gap between lines.
   static const double lineRhythmGap = 2.0;
