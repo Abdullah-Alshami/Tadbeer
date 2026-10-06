@@ -13,6 +13,8 @@ import '../../data/quran/quran_models.dart';
 import '../../data/quran/tadabbur_model.dart';
 import '../../data/reading_position/reading_position_model.dart';
 import '../../data/reminders/reminder_model.dart';
+import 'package:sqflite/sqflite.dart';
+import 'user_database.dart';
 import 'user_settings_model.dart';
 
 /// Central local storage coordinator for user-generated data in Tadbeer.
@@ -69,9 +71,10 @@ class UserDataStore extends ChangeNotifier {
 
   /// Initializes the local storage engine.
   /// Accepts an optional [testFile] for deterministic, isolated unit tests.
-  Future<void> init([File? testFile]) async {
+  Future<void> init([File? testFile, String? testDbPath]) async {
     if (_isInitialized && testFile == null) return;
 
+    final userDb = UserDatabase.instance;
     if (testFile != null) {
       _dataFile = testFile;
       _readingPosition = ReadingPosition.defaultPosition();
@@ -85,12 +88,80 @@ class UserDataStore extends ChangeNotifier {
       _tadabburItems.clear();
       _tadabburLookup.clear();
       _settings = const UserSettings();
+
+      final dbPath = testDbPath ?? inMemoryDatabasePath;
+      await userDb.close();
+      await userDb.init(dbPath);
     } else {
       final dir = await getApplicationDocumentsDirectory();
       _dataFile = File('${dir.path}/$fileName');
+      await userDb.init();
     }
 
-    await _loadFromFile();
+    if (userDb.isOpen) {
+      final savedPos = await userDb.loadReadingPosition();
+      if (savedPos != null) _readingPosition = savedPos;
+
+      final dbNotes = await userDb.loadNotes();
+      if (dbNotes.isNotEmpty) {
+        _notes.clear();
+        _notes.addAll(dbNotes);
+      }
+
+      final dbBookmarks = await userDb.loadBookmarks();
+      if (dbBookmarks.isNotEmpty) {
+        _bookmarks.clear();
+        _bookmarkLookup.clear();
+        for (final b in dbBookmarks) {
+          _bookmarks.add(b);
+          _bookmarkLookup[b.ayahKey] = b;
+        }
+      }
+
+      final dbHighlights = await userDb.loadHighlights();
+      if (dbHighlights.isNotEmpty) {
+        _highlights.clear();
+        _highlightLookup.clear();
+        for (final h in dbHighlights) {
+          _highlights.add(h);
+          _highlightLookup[h.ayahKey] = h;
+        }
+      }
+
+      final dbReminders = await userDb.loadReminders();
+      if (dbReminders.isNotEmpty) {
+        _reminders.clear();
+        _reminders.addAll(dbReminders);
+      }
+
+      final dbLinks = await userDb.loadAyahLinks();
+      if (dbLinks.isNotEmpty) {
+        _ayahLinks.clear();
+        _ayahLinks.addAll(dbLinks);
+      }
+
+      final dbTadabbur = await userDb.loadTadabburItems();
+      if (dbTadabbur.isNotEmpty) {
+        _tadabburItems.clear();
+        _tadabburLookup.clear();
+        for (final t in dbTadabbur) {
+          _tadabburItems.add(t);
+          _tadabburLookup[t.ayahKey] = t;
+        }
+      }
+
+      final dbSettings = await userDb.loadSettings();
+      if (dbSettings != null) _settings = dbSettings;
+
+      // Migrate from JSON file if SQLite was fresh but JSON file already exists
+      if (_notes.isEmpty && _bookmarks.isEmpty && _highlights.isEmpty && _dataFile != null && await _dataFile!.exists()) {
+        await _loadFromFile();
+        await _persistAllToSQLite();
+      }
+    } else {
+      await _loadFromFile();
+    }
+
     _isInitialized = true;
     notifyListeners();
   }
@@ -185,32 +256,59 @@ class UserDataStore extends ChangeNotifier {
     }
   }
 
-  /// Flushes current state to disk using an atomic write pattern.
+  /// Persists all in-memory collections into the SQLite user database.
+  Future<void> _persistAllToSQLite() async {
+    final userDb = UserDatabase.instance;
+    if (!userDb.isOpen) return;
+
+    await userDb.saveReadingPosition(_readingPosition);
+    for (final note in _notes) {
+      await userDb.insertOrUpdateNote(note);
+    }
+    for (final bookmark in _bookmarks) {
+      await userDb.insertBookmark(bookmark);
+    }
+    for (final highlight in _highlights) {
+      await userDb.insertOrUpdateHighlight(highlight);
+    }
+    for (final reminder in _reminders) {
+      await userDb.insertOrUpdateReminder(reminder);
+    }
+    for (final link in _ayahLinks) {
+      await userDb.insertOrUpdateAyahLink(link);
+    }
+    for (final item in _tadabburItems) {
+      await userDb.insertOrUpdateTadabbur(item);
+    }
+    await userDb.saveSettings(_settings);
+  }
+
+  /// Flushes current state to disk using an atomic JSON file pattern.
   Future<void> saveToDisk() async {
     if (_dataFile == null) return;
 
-    final data = {
-      'schemaVersion': currentSchemaVersion,
-      'exportedAt': DateTime.now().toIso8601String(),
-      'readingPosition': _readingPosition.toJson(),
-      'notes': _notes.map((n) => n.toJson()).toList(),
-      'bookmarks': _bookmarks.map((b) => b.toJson()).toList(),
-      'highlights': _highlights.map((h) => h.toJson()).toList(),
-      'reminders': _reminders.map((r) => r.toJson()).toList(),
-      'ayahLinks': _ayahLinks.map((l) => l.toJson()).toList(),
-      'tadabbur': _tadabburItems.map((t) => t.toJson()).toList(),
-      'settings': _settings.toJson(),
-    };
+    try {
+      final data = {
+        'schemaVersion': currentSchemaVersion,
+        'exportedAt': DateTime.now().toIso8601String(),
+        'readingPosition': _readingPosition.toJson(),
+        'notes': _notes.map((n) => n.toJson()).toList(),
+        'bookmarks': _bookmarks.map((b) => b.toJson()).toList(),
+        'highlights': _highlights.map((h) => h.toJson()).toList(),
+        'reminders': _reminders.map((r) => r.toJson()).toList(),
+        'ayahLinks': _ayahLinks.map((l) => l.toJson()).toList(),
+        'tadabbur': _tadabburItems.map((t) => t.toJson()).toList(),
+        'settings': _settings.toJson(),
+      };
 
-    final jsonString = jsonEncode(data);
+      final jsonString = jsonEncode(data);
 
-    // Atomic write pattern:
-    // 1. Write fully to temporary file
-    // 2. Flush OS buffers
-    // 3. Atomically rename temporary file over target file
-    final tempFile = File('${_dataFile!.path}.tmp');
-    await tempFile.writeAsString(jsonString, flush: true);
-    await tempFile.rename(_dataFile!.path);
+      final tempFile = File('${_dataFile!.path}.tmp');
+      await tempFile.writeAsString(jsonString, flush: true);
+      await tempFile.rename(_dataFile!.path);
+    } catch (e) {
+      debugPrint('UserDataStore.saveToDisk: $e');
+    }
   }
 
   // ==========================================
@@ -220,6 +318,10 @@ class UserDataStore extends ChangeNotifier {
   Future<void> setReadingPosition(ReadingPosition position) async {
     _readingPosition = position;
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.saveReadingPosition(position);
+    }
     await saveToDisk();
   }
 
@@ -261,6 +363,10 @@ class UserDataStore extends ChangeNotifier {
       _notes.insert(0, note);
     }
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.insertOrUpdateNote(note);
+    }
     await saveToDisk();
   }
 
@@ -310,6 +416,10 @@ class UserDataStore extends ChangeNotifier {
   Future<void> removeNote(String id) async {
     _notes.removeWhere((n) => n.id == id);
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.deleteNote(id);
+    }
     await saveToDisk();
   }
 
@@ -335,6 +445,10 @@ class UserDataStore extends ChangeNotifier {
     }
     _bookmarkLookup[bookmark.ayahKey] = bookmark;
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.insertBookmark(bookmark);
+    }
     await saveToDisk();
   }
 
@@ -368,6 +482,10 @@ class UserDataStore extends ChangeNotifier {
       final item = _bookmarks.removeAt(idx);
       _bookmarkLookup.remove(item.ayahKey);
       notifyListeners();
+      final userDb = UserDatabase.instance;
+      if (userDb.isOpen) {
+        await userDb.deleteBookmark(id);
+      }
       await saveToDisk();
     }
   }
@@ -396,6 +514,10 @@ class UserDataStore extends ChangeNotifier {
     }
     _highlightLookup[key] = highlight;
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.insertOrUpdateHighlight(highlight);
+    }
     await saveToDisk();
   }
 
@@ -419,6 +541,10 @@ class UserDataStore extends ChangeNotifier {
     if (existing != null) {
       _highlights.removeWhere((h) => h.id == existing.id);
       notifyListeners();
+      final userDb = UserDatabase.instance;
+      if (userDb.isOpen) {
+        await userDb.deleteHighlight(existing.id);
+      }
       await saveToDisk();
     }
   }
@@ -435,6 +561,10 @@ class UserDataStore extends ChangeNotifier {
       _reminders.add(reminder);
     }
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.insertOrUpdateReminder(reminder);
+    }
     await saveToDisk();
   }
 
@@ -442,8 +572,13 @@ class UserDataStore extends ChangeNotifier {
     final idx = _reminders.indexWhere((r) => r.id == id);
     if (idx != -1) {
       final reminder = _reminders[idx];
-      _reminders[idx] = reminder.copyWith(isEnabled: !reminder.isEnabled);
+      final updated = reminder.copyWith(isEnabled: !reminder.isEnabled);
+      _reminders[idx] = updated;
       notifyListeners();
+      final userDb = UserDatabase.instance;
+      if (userDb.isOpen) {
+        await userDb.insertOrUpdateReminder(updated);
+      }
       await saveToDisk();
     }
   }
@@ -451,6 +586,10 @@ class UserDataStore extends ChangeNotifier {
   Future<void> removeReminder(String id) async {
     _reminders.removeWhere((r) => r.id == id);
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.deleteReminder(id);
+    }
     await saveToDisk();
   }
 
@@ -461,6 +600,10 @@ class UserDataStore extends ChangeNotifier {
   Future<void> putSettings(UserSettings newSettings) async {
     _settings = newSettings;
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.saveSettings(newSettings);
+    }
     await saveToDisk();
   }
 
@@ -489,12 +632,20 @@ class UserDataStore extends ChangeNotifier {
       _ayahLinks.insert(0, link);
     }
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.insertOrUpdateAyahLink(link);
+    }
     await saveToDisk();
   }
 
   Future<void> deleteAyahLink(String id) async {
     _ayahLinks.removeWhere((l) => l.id == id);
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.deleteAyahLink(id);
+    }
     await saveToDisk();
   }
 
@@ -504,11 +655,16 @@ class UserDataStore extends ChangeNotifier {
       final existing = _ayahLinks[idx];
       if (!existing.containsAyah(verse.surahNumber, verse.ayahNumber)) {
         final updatedVerses = [...existing.verses, verse];
-        _ayahLinks[idx] = existing.copyWith(
+        final updated = existing.copyWith(
           verses: updatedVerses,
           updatedAt: DateTime.now(),
         );
+        _ayahLinks[idx] = updated;
         notifyListeners();
+        final userDb = UserDatabase.instance;
+        if (userDb.isOpen) {
+          await userDb.insertOrUpdateAyahLink(updated);
+        }
         await saveToDisk();
       }
     }
@@ -529,12 +685,17 @@ class UserDataStore extends ChangeNotifier {
       final updatedPositions = Map<String, LinkNodePosition>.from(
         existing.positions,
       )..remove(key);
-      _ayahLinks[idx] = existing.copyWith(
+      final updated = existing.copyWith(
         verses: updatedVerses,
         positions: updatedPositions,
         updatedAt: DateTime.now(),
       );
+      _ayahLinks[idx] = updated;
       notifyListeners();
+      final userDb = UserDatabase.instance;
+      if (userDb.isOpen) {
+        await userDb.insertOrUpdateAyahLink(updated);
+      }
       await saveToDisk();
     }
   }
@@ -555,11 +716,16 @@ class UserDataStore extends ChangeNotifier {
         }
         return v;
       }).toList();
-      _ayahLinks[idx] = existing.copyWith(
+      final updated = existing.copyWith(
         verses: updatedVerses,
         updatedAt: DateTime.now(),
       );
+      _ayahLinks[idx] = updated;
       notifyListeners();
+      final userDb = UserDatabase.instance;
+      if (userDb.isOpen) {
+        await userDb.insertOrUpdateAyahLink(updated);
+      }
       await saveToDisk();
     }
   }
@@ -572,12 +738,17 @@ class UserDataStore extends ChangeNotifier {
     final idx = _ayahLinks.indexWhere((l) => l.id == linkId);
     if (idx != -1) {
       final existing = _ayahLinks[idx];
-      _ayahLinks[idx] = existing.copyWith(
+      final updated = existing.copyWith(
         positions: positions,
         isManualLayout: isManual,
         updatedAt: DateTime.now(),
       );
+      _ayahLinks[idx] = updated;
       notifyListeners();
+      final userDb = UserDatabase.instance;
+      if (userDb.isOpen) {
+        await userDb.insertOrUpdateAyahLink(updated);
+      }
       await saveToDisk();
     }
   }
@@ -592,14 +763,19 @@ class UserDataStore extends ChangeNotifier {
     final idx = _ayahLinks.indexWhere((l) => l.id == linkId);
     if (idx != -1) {
       final existing = _ayahLinks[idx];
-      _ayahLinks[idx] = existing.copyWith(
+      final updated = existing.copyWith(
         lastViewMode: viewMode ?? existing.lastViewMode,
         panX: panX ?? existing.panX,
         panY: panY ?? existing.panY,
         zoomScale: zoomScale ?? existing.zoomScale,
         updatedAt: DateTime.now(),
       );
+      _ayahLinks[idx] = updated;
       notifyListeners();
+      final userDb = UserDatabase.instance;
+      if (userDb.isOpen) {
+        await userDb.insertOrUpdateAyahLink(updated);
+      }
       await saveToDisk();
     }
   }
@@ -621,6 +797,10 @@ class UserDataStore extends ChangeNotifier {
     _tadabburLookup.clear();
     _settings = const UserSettings();
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.clearAllUserData();
+    }
     await saveToDisk();
   }
 
@@ -664,9 +844,13 @@ class UserDataStore extends ChangeNotifier {
     final key = '$surahNumber:$ayahNumber';
     if (cleanedAnswers.isEmpty) {
       // Do not save empty responses; clean up if all were deleted
+      final existing = _tadabburLookup.remove(key);
       _tadabburItems.removeWhere((t) => t.ayahKey == key);
-      _tadabburLookup.remove(key);
       notifyListeners();
+      final userDb = UserDatabase.instance;
+      if (userDb.isOpen && existing != null) {
+        await userDb.deleteTadabbur(existing.id);
+      }
       await saveToDisk();
       return;
     }
@@ -692,14 +876,22 @@ class UserDataStore extends ChangeNotifier {
     _tadabburLookup[key] = item;
 
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.insertOrUpdateTadabbur(item);
+    }
     await saveToDisk();
   }
 
   Future<void> deleteTadabbur(int surahNumber, int ayahNumber) async {
     final key = '$surahNumber:$ayahNumber';
+    final existing = _tadabburLookup.remove(key);
     _tadabburItems.removeWhere((t) => t.ayahKey == key);
-    _tadabburLookup.remove(key);
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen && existing != null) {
+      await userDb.deleteTadabbur(existing.id);
+    }
     await saveToDisk();
   }
 
@@ -737,6 +929,11 @@ class UserDataStore extends ChangeNotifier {
   Future<void> replaceAllUserData(Map<String, dynamic> data) async {
     _applyData(data);
     notifyListeners();
+    final userDb = UserDatabase.instance;
+    if (userDb.isOpen) {
+      await userDb.clearAllUserData();
+      await _persistAllToSQLite();
+    }
     await saveToDisk();
   }
 }

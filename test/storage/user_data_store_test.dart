@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
+import 'package:tadbeer/core/storage/user_database.dart';
 import 'package:tadbeer/data/notes/note_model.dart';
 import 'package:tadbeer/data/quran/quran_models.dart';
 
@@ -84,6 +85,11 @@ void main() {
       await store.deleteNote('note-free-1');
       expect(store.notes.length, equals(1));
       expect(store.notes.first.id, equals('note-ayah-1'));
+
+      // 5. Verify SQLite persistence
+      final dbNotes = await UserDatabase.instance.loadNotes();
+      expect(dbNotes.length, equals(1));
+      expect(dbNotes.first.id, equals('note-ayah-1'));
     });
 
     test('Bookmarks Toggle and Removal', () async {
