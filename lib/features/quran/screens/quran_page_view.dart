@@ -9,7 +9,7 @@ import '../renderers/mushaf_canvas.dart';
 class QuranPageView extends StatelessWidget {
   final QuranPage? page;
   final int? pageNumber;
-  final double fontSize;
+  final double? fontSize;
   final Ayah? selectedAyah;
   final ValueChanged<Ayah>? onAyahTap;
   final ValueChanged<Ayah>? onAyahLongPress;
@@ -18,7 +18,7 @@ class QuranPageView extends StatelessWidget {
     super.key,
     this.page,
     this.pageNumber,
-    this.fontSize = 18.0,
+    this.fontSize,
     this.selectedAyah,
     this.onAyahTap,
     this.onAyahLongPress,
@@ -38,6 +38,7 @@ class QuranPageView extends StatelessWidget {
       selectedAyah: selectedAyah,
       onAyahTap: onAyahTap,
       onAyahLongPress: onAyahLongPress,
+      fontSize: fontSize,
     );
   }
 }

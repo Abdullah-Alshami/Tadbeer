@@ -32,8 +32,11 @@ enum QuranFontSizeOption {
   }
 }
 
-/// User settings and preferences in Tadbeer.
 class UserSettings {
+  static const double defaultQuranFontSize = 23.0;
+  static const double minQuranFontSize = 18.0;
+  static const double maxQuranFontSize = 28.0;
+
   final ThemeMode themeMode;
   final String languageCode;
 
@@ -47,6 +50,7 @@ class UserSettings {
   bool get hideTadabburIntroPermanently => hideTadbeerIntroPermanently;
 
   final QuranFontSizeOption quranFontOption;
+  final double quranFontSize;
   final double ayahLinkFontSize;
 
   const UserSettings({
@@ -55,12 +59,10 @@ class UserSettings {
     bool hideTadbeerIntroPermanently = false,
     bool? hideTadabburIntroPermanently,
     this.quranFontOption = QuranFontSizeOption.medium,
+    this.quranFontSize = defaultQuranFontSize,
     this.ayahLinkFontSize = 18.0,
   }) : hideTadbeerIntroPermanently =
            hideTadabburIntroPermanently ?? hideTadbeerIntroPermanently;
-
-  /// Backward compatibility getter returning the effective font size in points.
-  double get quranFontSize => quranFontOption.fontSize;
 
   Map<String, dynamic> toJson() => {
     'themeMode': themeMode.name,
@@ -92,15 +94,15 @@ class UserSettings {
         (e) => e.name == optionStr,
         orElse: () => QuranFontSizeOption.medium,
       );
-    } else if (json['quranFontSize'] != null) {
+    }
+
+    double quranSize = UserSettings.defaultQuranFontSize;
+    if (json['quranFontSize'] != null) {
       final fs = (json['quranFontSize'] as num).toDouble();
-      if (fs <= 20.0) {
-        fontOpt = QuranFontSizeOption.small;
-      } else if (fs >= 27.0) {
-        fontOpt = QuranFontSizeOption.large;
-      } else {
-        fontOpt = QuranFontSizeOption.medium;
-      }
+      quranSize = fs.clamp(
+        UserSettings.minQuranFontSize,
+        UserSettings.maxQuranFontSize,
+      );
     }
 
     return UserSettings(
@@ -111,6 +113,7 @@ class UserSettings {
           json['hideTadabburIntroPermanently'] as bool? ??
           false,
       quranFontOption: fontOpt,
+      quranFontSize: quranSize,
       ayahLinkFontSize: (json['ayahLinkFontSize'] as num?)?.toDouble() ?? 18.0,
     );
   }
@@ -124,17 +127,9 @@ class UserSettings {
     double? quranFontSize,
     double? ayahLinkFontSize,
   }) {
-    QuranFontSizeOption resolvedOption =
-        quranFontOption ?? this.quranFontOption;
-    if (quranFontOption == null && quranFontSize != null) {
-      if (quranFontSize <= 20.0) {
-        resolvedOption = QuranFontSizeOption.small;
-      } else if (quranFontSize >= 27.0) {
-        resolvedOption = QuranFontSizeOption.large;
-      } else {
-        resolvedOption = QuranFontSizeOption.medium;
-      }
-    }
+    final newQuranFontSize = quranFontSize != null
+        ? quranFontSize.clamp(minQuranFontSize, maxQuranFontSize)
+        : this.quranFontSize;
 
     return UserSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -143,7 +138,8 @@ class UserSettings {
           hideTadbeerIntroPermanently ??
           hideTadabburIntroPermanently ??
           this.hideTadbeerIntroPermanently,
-      quranFontOption: resolvedOption,
+      quranFontOption: quranFontOption ?? this.quranFontOption,
+      quranFontSize: newQuranFontSize,
       ayahLinkFontSize: ayahLinkFontSize ?? this.ayahLinkFontSize,
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
 import '../data/mushaf_layout_models.dart';
 import '../data/qcf_font_manager.dart';
@@ -26,6 +27,7 @@ class MushafCanvas extends StatefulWidget {
   final Ayah? selectedAyah;
   final ValueChanged<Ayah>? onAyahTap;
   final ValueChanged<Ayah>? onAyahLongPress;
+  final double? fontSize;
 
   const MushafCanvas({
     super.key,
@@ -33,6 +35,7 @@ class MushafCanvas extends StatefulWidget {
     this.selectedAyah,
     this.onAyahTap,
     this.onAyahLongPress,
+    this.fontSize,
   });
 
   @override
@@ -66,38 +69,47 @@ class _MushafCanvasState extends State<MushafCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    return ListenableBuilder(
+      listenable: UserDataStore.instance,
+      builder: (context, _) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        final effectiveFontSize =
+            widget.fontSize ?? UserDataStore.instance.settings.quranFontSize;
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Container(
-        color: AppColors.mushafBackground,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.lightBorder, width: 1.0),
-            borderRadius: BorderRadius.circular(4),
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Container(
+            color: AppColors.mushafBackground,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.lightBorder, width: 1.0),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Mushaf Page Top Header (Surah name & Juz number)
+                  _buildPageHeader(context, isDark),
+                  const SizedBox(height: 4),
+
+                  // Mushaf Page Text Block (15 authentic lines)
+                  Expanded(
+                    child: _buildTextCanvas(context, isDark, effectiveFontSize),
+                  ),
+
+                  // Mushaf Page Bottom Footer (Arabic page number)
+                  const SizedBox(height: 2),
+                  _buildPageFooter(context, isDark),
+                ],
+              ),
+            ),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Mushaf Page Top Header (Surah name & Juz number)
-              _buildPageHeader(context, isDark),
-              const SizedBox(height: 4),
-
-              // Mushaf Page Text Block (15 authentic lines)
-              Expanded(child: _buildTextCanvas(context, isDark)),
-
-              // Mushaf Page Bottom Footer (Arabic page number)
-              const SizedBox(height: 2),
-              _buildPageFooter(context, isDark),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -167,7 +179,11 @@ class _MushafCanvasState extends State<MushafCanvas> {
     );
   }
 
-  Widget _buildTextCanvas(BuildContext context, bool isDark) {
+  Widget _buildTextCanvas(
+    BuildContext context,
+    bool isDark,
+    double effectiveFontSize,
+  ) {
     final pageLayout = widget.pageLayout;
     final isOpeningPage = pageLayout.lines.length < 15;
 
@@ -197,6 +213,7 @@ class _MushafCanvasState extends State<MushafCanvas> {
                     selectedAyah: widget.selectedAyah,
                     onAyahTap: widget.onAyahTap,
                     onAyahLongPress: widget.onAyahLongPress,
+                    fontSize: effectiveFontSize,
                   ),
                 ),
             ],
@@ -219,6 +236,7 @@ class _MushafCanvasState extends State<MushafCanvas> {
               selectedAyah: widget.selectedAyah,
               onAyahTap: widget.onAyahTap,
               onAyahLongPress: widget.onAyahLongPress,
+              fontSize: effectiveFontSize,
             ),
           ),
       ],

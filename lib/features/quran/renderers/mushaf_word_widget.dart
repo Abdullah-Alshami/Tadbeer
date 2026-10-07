@@ -17,9 +17,13 @@ class MushafWordWidget extends StatelessWidget {
   final Ayah? selectedAyah;
   final ValueChanged<Ayah>? onAyahTap;
   final ValueChanged<Ayah>? onAyahLongPress;
+  final double? fontSize;
 
-  /// Fixed, standard Quran typography font size uniform across all 604 pages.
-  static const double quranFontSize = 23;
+  /// Default Quran typography font size uniform across all 604 pages.
+  static const double defaultQuranFontSize = 23.0;
+
+  /// Backward-compatibility constant.
+  static const double quranFontSize = defaultQuranFontSize;
 
   const MushafWordWidget({
     super.key,
@@ -27,6 +31,7 @@ class MushafWordWidget extends StatelessWidget {
     this.selectedAyah,
     this.onAyahTap,
     this.onAyahLongPress,
+    this.fontSize,
   });
 
   @override
@@ -81,6 +86,7 @@ class MushafWordWidget extends StatelessWidget {
 
     final displayText = word.glyph.isNotEmpty ? word.glyph : word.text;
     final fontFamily = QcfFontManager.fontFamilyForPage(word.pageNumber);
+    final effectiveFontSize = fontSize ?? storage.settings.quranFontSize;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -109,7 +115,7 @@ class MushafWordWidget extends StatelessWidget {
           softWrap: false,
           style: TextStyle(
             fontFamily: fontFamily,
-            fontSize: quranFontSize,
+            fontSize: effectiveFontSize,
             color: textColor,
             height: 1.25,
           ),
@@ -142,6 +148,7 @@ class MushafWordWidget extends StatelessWidget {
         ? word.glyph
         : ' ﴿$ayahNumberText﴾ ';
     final fontFamily = QcfFontManager.fontFamilyForPage(word.pageNumber);
+    final effectiveFontSize = fontSize ?? storage.settings.quranFontSize;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -171,7 +178,7 @@ class MushafWordWidget extends StatelessWidget {
             softWrap: false,
             style: TextStyle(
               fontFamily: fontFamily,
-              fontSize: quranFontSize,
+              fontSize: effectiveFontSize,
               fontWeight: FontWeight.normal,
               color: glyphColor,
               height: 1.25,

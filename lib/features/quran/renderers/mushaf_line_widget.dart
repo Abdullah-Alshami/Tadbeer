@@ -19,6 +19,7 @@ class MushafLineWidget extends StatelessWidget {
   final Ayah? selectedAyah;
   final ValueChanged<Ayah>? onAyahTap;
   final ValueChanged<Ayah>? onAyahLongPress;
+  final double? fontSize;
 
   const MushafLineWidget({
     super.key,
@@ -26,6 +27,7 @@ class MushafLineWidget extends StatelessWidget {
     this.selectedAyah,
     this.onAyahTap,
     this.onAyahLongPress,
+    this.fontSize,
   });
 
   @override
@@ -64,6 +66,7 @@ class MushafLineWidget extends StatelessWidget {
                 selectedAyah: selectedAyah,
                 onAyahTap: onAyahTap,
                 onAyahLongPress: onAyahLongPress,
+                fontSize: fontSize,
               ),
             ),
         ],

@@ -156,7 +156,7 @@ void main() {
       expect(store.settings.themeMode, equals(ThemeMode.dark));
       expect(store.settings.languageCode, equals('en'));
       expect(store.settings.hideTadabburIntroPermanently, isTrue);
-      expect(store.settings.quranFontSize, equals(22.0));
+      expect(store.settings.quranFontSize, equals(28.0));
     });
   });
 }
