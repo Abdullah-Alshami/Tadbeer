@@ -333,8 +333,8 @@ class _TadbeerIntroScreenState extends State<TadbeerIntroScreen> {
                       ),
                     ),
 
-                    // هذه المسافة تفصل زر متابعة عن خيار عدم إظهار النافذة.
-                    const SizedBox(height: 16),
+                    // رفع خيار عدم إظهار النافذة للأعلى بمقدار 10px لتحقيق توازن بصري أفضل
+                    const SizedBox(height: 6),
 
                     // هذا الجزء كاملًا مسؤول عن خيار:
                     // "لا تظهر لي هذه النافذة مرة أخرى"
@@ -400,6 +400,7 @@ class _TadbeerIntroScreenState extends State<TadbeerIntroScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),

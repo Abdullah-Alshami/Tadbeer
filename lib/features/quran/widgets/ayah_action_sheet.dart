@@ -397,18 +397,18 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                 ),
               ] else ...[
                 // Main Actions Row: Tadbeer Pause, Ayah Links, Note, Bookmark, Highlight, Copy
+                // Distributed equally and centered without horizontal scroll or RTL bias
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 12,
-                    horizontal: 4,
+                    horizontal: 6,
                   ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // Tadbeer Pause action
-                        _ActionButton(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Tadbeer Pause action
+                      Expanded(
+                        child: _ActionButton(
                           icon: Icons.spa_outlined,
                           label: 'وقفة تدبر',
                           hasActiveIndicator:
@@ -422,9 +422,11 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                             TadbeerPauseSheet.show(context, widget.ayah);
                           },
                         ),
+                      ),
 
-                        // Ayah Links action
-                        _ActionButton(
+                      // Ayah Links action
+                      Expanded(
+                        child: _ActionButton(
                           icon: Icons.hub_outlined,
                           label: 'رابط آيات',
                           onTap: () {
@@ -432,17 +434,21 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                             AyahLinkPickerDialog.show(context, widget.ayah);
                           },
                         ),
+                      ),
 
-                        // Note action
-                        _ActionButton(
+                      // Note action
+                      Expanded(
+                        child: _ActionButton(
                           icon: Icons.edit_note,
                           label: l10n.addNote,
                           onTap: () => setState(() => _isNoteEditorOpen = true),
                           hasActiveIndicator: _existingNoteId != null,
                         ),
+                      ),
 
-                        // Bookmark action
-                        _ActionButton(
+                      // Bookmark action
+                      Expanded(
+                        child: _ActionButton(
                           icon: isBookmarked
                               ? Icons.bookmark
                               : Icons.bookmark_border,
@@ -457,9 +463,11 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                             if (context.mounted) Navigator.of(context).pop();
                           },
                         ),
+                      ),
 
-                        // Highlight action
-                        _ActionButton(
+                      // Highlight action
+                      Expanded(
+                        child: _ActionButton(
                           icon: Icons.palette_outlined,
                           label: l10n.highlight,
                           iconColor: currentHighlight != null
@@ -469,9 +477,11 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                           onTap: () =>
                               setState(() => _isHighlightPickerOpen = true),
                         ),
+                      ),
 
-                        // Copy action
-                        _ActionButton(
+                      // Copy action
+                      Expanded(
+                        child: _ActionButton(
                           icon: Icons.copy,
                           label: l10n.copy,
                           onTap: () {
@@ -491,8 +501,8 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                             );
                           },
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -533,14 +543,14 @@ class _ActionButton extends StatelessWidget {
           ? AppColors.darkBorder
           : Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(icon, size: 24, color: color),
+                Icon(icon, size: 22, color: color),
                 if (hasActiveIndicator)
                   Positioned(
                     top: -2,
@@ -559,8 +569,11 @@ class _ActionButton extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: isDark
                     ? AppColors.nightQuranText

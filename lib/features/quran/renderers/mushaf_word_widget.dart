@@ -210,6 +210,22 @@ class _MushafWordWidgetState extends State<MushafWordWidget> {
     final effectiveFontSize =
         widget.fontSize ?? MushafWordWidget.defaultQuranFontSize;
 
+    // Determine overlay indicator text based on bookmark and note states:
+    // Normal: ﴿١﴾ (or authentic glyph)
+    // Bookmarked: 🔖
+    // Note: 📝
+    // Bookmarked + Note: 🔖📝
+    final String? markerOverlayText;
+    if (isBookmarked && notes.isNotEmpty) {
+      markerOverlayText = '🔖📝';
+    } else if (isBookmarked) {
+      markerOverlayText = '🔖';
+    } else if (notes.isNotEmpty) {
+      markerOverlayText = '📝';
+    } else {
+      markerOverlayText = null;
+    }
+
     return Listener(
       behavior: HitTestBehavior.opaque,
       onPointerDown: (e) => _onPointerDown(e, ayah),
@@ -220,51 +236,46 @@ class _MushafWordWidgetState extends State<MushafWordWidget> {
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          // Authentic QCF V2 Ayah end rosette glyph
-          Text(
-            displayRosette,
-            textDirection: TextDirection.rtl,
-            maxLines: 1,
-            softWrap: false,
-            style: TextStyle(
-              fontFamily: fontFamily,
-              fontSize: effectiveFontSize,
-              fontWeight: FontWeight.normal,
-              color: glyphColor,
-              height: 1.25,
+          // Authentic QCF V2 Ayah end rosette glyph:
+          // Kept as the non-positioned base child in Stack to fix the layout width
+          // measured by MushafLineWidget. When an overlay marker is active,
+          // opacity is 0.0 so rosette width remains identical without altering line layout.
+          Opacity(
+            opacity: markerOverlayText == null ? 1.0 : 0.0,
+            child: Text(
+              displayRosette,
+              textDirection: TextDirection.rtl,
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                fontFamily: fontFamily,
+                fontSize: effectiveFontSize,
+                fontWeight: FontWeight.normal,
+                color: glyphColor,
+                height: 1.25,
+              ),
             ),
           ),
 
-          // Bookmark indicator icon placed above rosette without adding line width
-          if (isBookmarked)
-            Positioned(
-              top: -6,
-              child: Icon(Icons.bookmark, size: 10, color: AppColors.olive),
-            ),
-
-          // Note indicator icon placed below rosette without adding line width
-          if (notes.isNotEmpty)
-            Positioned(
-              bottom: -6,
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          NoteEditorScreen(existingNote: notes.first),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(1.0),
-                  decoration: BoxDecoration(
-                    color: AppColors.olive.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.sticky_note_2_outlined,
-                    size: 9,
-                    color: isDark ? AppColors.oliveSoft : AppColors.olive,
+          // Overlay indicator rendered at the exact position of the rosette
+          if (markerOverlayText != null)
+            Positioned.fill(
+              child: Center(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: notes.isNotEmpty
+                      ? () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  NoteEditorScreen(existingNote: notes.first),
+                            ),
+                          );
+                        }
+                      : null,
+                  child: Text(
+                    markerOverlayText,
+                    style: const TextStyle(fontSize: 12, height: 1.0),
                   ),
                 ),
               ),
