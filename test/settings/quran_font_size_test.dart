@@ -190,7 +190,7 @@ void main() {
       },
     );
 
-    testWidgets('Short press (< 2.0s) does NOT trigger long press', (
+    testWidgets('Short press (< 800ms) does NOT trigger long press', (
       tester,
     ) async {
       bool longPressed = false;
@@ -207,18 +207,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Hold pointer for 1000ms (less than 2000ms threshold)
+      // Hold pointer for 500ms (less than 800ms threshold)
       final gesture = await tester.startGesture(
         tester.getCenter(find.byType(MushafWordWidget)),
       );
-      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pump(const Duration(milliseconds: 500));
       await gesture.up();
       await tester.pumpAndSettle();
 
       expect(longPressed, isFalse);
     });
 
-    testWidgets('Long press (held for 2000ms) triggers onAyahLongPress', (
+    testWidgets('Long press (held for 800ms) triggers onAyahLongPress', (
       tester,
     ) async {
       Ayah? longPressedAyah;
@@ -235,11 +235,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Hold pointer down for 2100ms
+      // Hold pointer down for 850ms (>= 800ms threshold)
       final gesture = await tester.startGesture(
         tester.getCenter(find.byType(MushafWordWidget)),
       );
-      await tester.pump(const Duration(milliseconds: 2100));
+      await tester.pump(const Duration(milliseconds: 850));
       await gesture.up();
       await tester.pumpAndSettle();
 
@@ -248,7 +248,7 @@ void main() {
       expect(longPressedAyah!.ayahNumber, equals(1));
     });
 
-    testWidgets('Horizontal drag cancels 2.0s timer immediately', (
+    testWidgets('Horizontal drag cancels 800ms timer immediately', (
       tester,
     ) async {
       bool longPressed = false;
@@ -273,7 +273,7 @@ void main() {
 
       // Drag horizontally by 30px
       await gesture.moveBy(const Offset(30, 0));
-      await tester.pump(const Duration(milliseconds: 2000));
+      await tester.pump(const Duration(milliseconds: 800));
       await gesture.up();
       await tester.pumpAndSettle();
 

@@ -55,7 +55,7 @@ class _MushafWordWidgetState extends State<MushafWordWidget> {
     _downPosition = event.position;
     _longPressTriggered = false;
     _longPressTimer?.cancel();
-    _longPressTimer = Timer(const Duration(milliseconds: 2000), () {
+    _longPressTimer = Timer(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       _longPressTriggered = true;
       if (widget.onAyahLongPress != null) {

@@ -252,7 +252,17 @@ class _QuranScreenState extends State<QuranScreen> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Current page number button (at far right in RTL)
+          // 1. Drawer menu button (☰) (at the far right corner in RTL)
+          IconButton(
+            icon: const Icon(Icons.menu, size: 22),
+            tooltip: 'القائمة',
+            color: isDark
+                ? AppColors.darkTextPrimary
+                : AppColors.lightTextPrimary,
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          ),
+          const SizedBox(width: 8),
+          // 2. Current page number button (to the left of ☰ in RTL)
           InkWell(
             onTap: _showJumpToPageDialog,
             borderRadius: BorderRadius.circular(8),
@@ -272,7 +282,7 @@ class _QuranScreenState extends State<QuranScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          // Search button (in the middle in RTL)
+          // 3. Search button (🔍) (to the left of the page number in RTL)
           IconButton(
             icon: const Icon(Icons.search, size: 22),
             tooltip: l10n.search,
@@ -280,16 +290,6 @@ class _QuranScreenState extends State<QuranScreen> {
                 ? AppColors.darkTextPrimary
                 : AppColors.lightTextPrimary,
             onPressed: _openSearch,
-          ),
-          const SizedBox(width: 8),
-          // Drawer menu button (☰) (next to search in RTL)
-          IconButton(
-            icon: const Icon(Icons.menu, size: 22),
-            tooltip: 'القائمة',
-            color: isDark
-                ? AppColors.darkTextPrimary
-                : AppColors.lightTextPrimary,
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           ),
         ],
       ),

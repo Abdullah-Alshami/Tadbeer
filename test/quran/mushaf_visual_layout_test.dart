@@ -310,7 +310,7 @@ void main() {
         expect(tappedAyah!.surahNumber, 1);
         expect(tappedAyah!.ayahNumber, 1);
 
-        // Long press on word "ٱلْحَمْدُ" (Ayah 1:2, stable ID 2) - requires 2.0 seconds
+        // Long press on word "ٱلْحَمْدُ" (Ayah 1:2, stable ID 2) - requires 800ms
         final gesture = await tester.startGesture(
           tester.getCenter(
             find.byWidgetPredicate(
@@ -318,7 +318,7 @@ void main() {
             ),
           ),
         );
-        await tester.pump(const Duration(milliseconds: 2100));
+        await tester.pump(const Duration(milliseconds: 850));
         await gesture.up();
         await tester.pumpAndSettle();
         expect(longPressedAyah, isNotNull);
