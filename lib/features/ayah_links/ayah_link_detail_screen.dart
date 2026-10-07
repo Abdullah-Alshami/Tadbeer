@@ -3,19 +3,16 @@ import 'package:flutter/material.dart';
 import '../../app/localization.dart';
 import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
-import '../../core/utils/arabic_search_normalizer.dart';
 import '../../features/ayah_links/ayah_link_model.dart';
 import '../../features/ayah_links/ayah_link_repository.dart';
-import 'views/ayah_link_cards_view.dart';
 import 'views/ayah_link_network_view.dart';
 import 'views/ayah_link_ordered_view.dart';
 import 'widgets/add_verse_to_link_dialog.dart';
 import 'widgets/create_link_dialog.dart';
 
-/// Screen displaying an Ayah Link across the 3 views:
-/// 1. 🌐 Network Canvas
-/// 2. 📜 Ordered List
-/// 3. 🗂️ Cards View
+/// Screen displaying an Ayah Link across the 2 views:
+/// 1. 🌐 Network Canvas (شبكة)
+/// 2. 📜 Ordered List (مرتب)
 class AyahLinkDetailScreen extends StatefulWidget {
   final String linkId;
 
@@ -35,7 +32,8 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
   void initState() {
     super.initState();
     final link = _repo.getLink(widget.linkId);
-    _activeViewMode = link?.lastViewMode ?? 'network';
+    final mode = link?.lastViewMode ?? 'network';
+    _activeViewMode = (mode == 'ordered') ? 'ordered' : 'network';
   }
 
   void _switchViewMode(String mode) {
@@ -93,201 +91,6 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
     }
   }
 
-  void _showFontSizePicker(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentSize = UserDataStore.instance.settings.ayahLinkFontSize;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (sheetCtx) {
-        double tempSize = currentSize;
-
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Directionality(
-              textDirection: TextDirection.rtl,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 18,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.darkSurface
-                      : AppColors.comsilkLight,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.darkSurfaceVariant
-                        : AppColors.lightBorder,
-                  ),
-                ),
-                child: SafeArea(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withValues(alpha: 0.35),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'حجم نص الآيات في الروابط',
-                            style: TextStyle(
-                              fontFamily: 'Amiri',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.olive,
-                            ),
-                          ),
-                          Text(
-                            ArabicSearchNormalizer.toArabicDigits(
-                              tempSize.round(),
-                            ),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.olive,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildPresetChip('صغير', 14.0, tempSize, (val) {
-                            setSheetState(() => tempSize = val);
-                            UserDataStore.instance.updateSettings(
-                              UserDataStore.instance.settings.copyWith(
-                                ayahLinkFontSize: val,
-                              ),
-                            );
-                          }, isDark),
-                          _buildPresetChip('متوسط', 18.0, tempSize, (val) {
-                            setSheetState(() => tempSize = val);
-                            UserDataStore.instance.updateSettings(
-                              UserDataStore.instance.settings.copyWith(
-                                ayahLinkFontSize: val,
-                              ),
-                            );
-                          }, isDark),
-                          _buildPresetChip('كبير', 22.0, tempSize, (val) {
-                            setSheetState(() => tempSize = val);
-                            UserDataStore.instance.updateSettings(
-                              UserDataStore.instance.settings.copyWith(
-                                ayahLinkFontSize: val,
-                              ),
-                            );
-                          }, isDark),
-                          _buildPresetChip('كبير جداً', 26.0, tempSize, (val) {
-                            setSheetState(() => tempSize = val);
-                            UserDataStore.instance.updateSettings(
-                              UserDataStore.instance.settings.copyWith(
-                                ayahLinkFontSize: val,
-                              ),
-                            );
-                          }, isDark),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Slider(
-                        value: tempSize,
-                        min: 14.0,
-                        max: 28.0,
-                        divisions: 7,
-                        activeColor: Theme.of(context).colorScheme.primary,
-                        onChanged: (val) {
-                          setSheetState(() => tempSize = val);
-                          UserDataStore.instance.updateSettings(
-                            UserDataStore.instance.settings.copyWith(
-                              ayahLinkFontSize: val,
-                            ),
-                          );
-                        },
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface(context),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '﴿ وَقَالُوا لَن تَمَسَّنَا ٱلنَّارُ إِلَّا أَيَّامًا مَّعْدُودَةً ﴾',
-                          textAlign: TextAlign.center,
-                          textDirection: TextDirection.rtl,
-                          style: TextStyle(
-                            fontFamily: 'AmiriQuran',
-                            fontSize: tempSize,
-                            color: isDark
-                                ? AppColors.nightQuranText
-                                : AppColors.dayQuranText,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildPresetChip(
-    String label,
-    double sizeVal,
-    double currentVal,
-    ValueChanged<double> onSelected,
-    bool isDark,
-  ) {
-    final isSelected = (sizeVal - currentVal).abs() < 1.5;
-    return InkWell(
-      onTap: () => onSelected(sizeVal),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : AppColors.surface(context),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : AppColors.border(context),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: isSelected
-                ? Colors.white
-                : (isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightPrimaryDark),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -317,12 +120,6 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
               actions: [
-                // Font Size adjustment
-                IconButton(
-                  icon: const Icon(Icons.format_size_rounded),
-                  tooltip: 'حجم الخط',
-                  onPressed: () => _showFontSizePicker(context),
-                ),
                 // Secondary actions popup menu
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),
@@ -416,22 +213,13 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
                         isActive: _activeViewMode == 'ordered',
                         onTap: () => _switchViewMode('ordered'),
                       ),
-                      const SizedBox(width: 8),
-                      _ViewTabButton(
-                        label: l10n.cardsView,
-                        icon: Icons.view_agenda_outlined,
-                        isActive: _activeViewMode == 'cards',
-                        onTap: () => _switchViewMode('cards'),
-                      ),
                     ],
                   ),
                 ),
               ),
             ),
             body: IndexedStack(
-              index: _activeViewMode == 'network'
-                  ? 0
-                  : (_activeViewMode == 'ordered' ? 1 : 2),
+              index: _activeViewMode == 'network' ? 0 : 1,
               children: [
                 AyahLinkNetworkView(
                   key: _networkKey,
@@ -439,10 +227,6 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
                   onAddVerse: () => _openAddVerse(link),
                 ),
                 AyahLinkOrderedView(
-                  link: link,
-                  onAddVerse: () => _openAddVerse(link),
-                ),
-                AyahLinkCardsView(
                   link: link,
                   onAddVerse: () => _openAddVerse(link),
                 ),

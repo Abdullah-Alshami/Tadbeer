@@ -33,7 +33,7 @@ enum QuranFontSizeOption {
 }
 
 class UserSettings {
-  static const double defaultQuranFontSize = 23.0;
+  static const double defaultQuranFontSize = 20.0;
   static const double minQuranFontSize = 18.0;
   static const double maxQuranFontSize = 28.0;
 

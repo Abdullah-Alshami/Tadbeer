@@ -618,15 +618,7 @@ class UserDataStore extends ChangeNotifier {
   Future<void> updateSettings(UserSettings newSettings) =>
       putSettings(newSettings);
 
-  double get quranFontSize => _settings.quranFontSize;
-
-  Future<void> setQuranFontSize(double size) async {
-    final clamped = size.clamp(
-      UserSettings.minQuranFontSize,
-      UserSettings.maxQuranFontSize,
-    );
-    await updateSettings(_settings.copyWith(quranFontSize: clamped));
-  }
+  double get quranFontSize => 20.0;
 
   // ==========================================
   // AYAH LINKS (روابط الآيات)

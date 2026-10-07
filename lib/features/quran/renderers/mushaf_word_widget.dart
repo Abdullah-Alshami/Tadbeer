@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
@@ -12,7 +14,7 @@ import '../../notes/note_editor_screen.dart';
 
 /// Renders a single discrete Quran word token or Ayah end marker
 /// strictly according to authentic Madinah Mushaf QCF V2 specifications.
-class MushafWordWidget extends StatelessWidget {
+class MushafWordWidget extends StatefulWidget {
   final MushafWord word;
   final Ayah? selectedAyah;
   final ValueChanged<Ayah>? onAyahTap;
@@ -20,7 +22,7 @@ class MushafWordWidget extends StatelessWidget {
   final double? fontSize;
 
   /// Default Quran typography font size uniform across all 604 pages.
-  static const double defaultQuranFontSize = 23.0;
+  static const double defaultQuranFontSize = 20.0;
 
   /// Backward-compatibility constant.
   static const double quranFontSize = defaultQuranFontSize;
@@ -35,16 +37,80 @@ class MushafWordWidget extends StatelessWidget {
   });
 
   @override
+  State<MushafWordWidget> createState() => _MushafWordWidgetState();
+}
+
+class _MushafWordWidgetState extends State<MushafWordWidget> {
+  Timer? _longPressTimer;
+  Offset? _downPosition;
+  bool _longPressTriggered = false;
+
+  @override
+  void dispose() {
+    _longPressTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onPointerDown(PointerDownEvent event, Ayah ayah) {
+    _downPosition = event.position;
+    _longPressTriggered = false;
+    _longPressTimer?.cancel();
+    _longPressTimer = Timer(const Duration(milliseconds: 2000), () {
+      if (!mounted) return;
+      _longPressTriggered = true;
+      if (widget.onAyahLongPress != null) {
+        widget.onAyahLongPress!(ayah);
+      } else {
+        AyahActionSheet.show(context, ayah);
+      }
+    });
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (_downPosition != null) {
+      final delta = event.position - _downPosition!;
+      if (delta.dx.abs() > 8.0 || delta.distance > 12.0) {
+        _longPressTimer?.cancel();
+        _longPressTimer = null;
+      }
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event, Ayah ayah) {
+    final timerWasActive = _longPressTimer != null && _longPressTimer!.isActive;
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+
+    if (!_longPressTriggered && timerWasActive) {
+      final distance = _downPosition != null
+          ? (event.position - _downPosition!).distance
+          : 0.0;
+      if (distance <= 12.0) {
+        widget.onAyahTap?.call(ayah);
+      }
+    }
+    _downPosition = null;
+    _longPressTriggered = false;
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    _downPosition = null;
+    _longPressTriggered = false;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final repo = QuranRepository.instance;
-    final ayah = repo.getAyah(word.surah, word.ayah);
+    final ayah = repo.getAyah(widget.word.surah, widget.word.ayah);
     if (ayah == null) return const SizedBox.shrink();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final storage = UserDataStore.instance;
 
     // Handle end-of-ayah marker
-    if (word.isAyahEnd) {
+    if (widget.word.isAyahEnd) {
       return _buildAyahEndMarker(
         context: context,
         ayah: ayah,
@@ -68,7 +134,7 @@ class MushafWordWidget extends StatelessWidget {
     required bool isDark,
     required UserDataStore storage,
   }) {
-    final isSelected = selectedAyah?.id == ayah.id;
+    final isSelected = widget.selectedAyah?.id == ayah.id;
     final highlight = storage.getHighlight(ayah.surahNumber, ayah.ayahNumber);
 
     Color? backgroundColor;
@@ -84,26 +150,19 @@ class MushafWordWidget extends StatelessWidget {
         ? Colors.white
         : AppColors.mushafQuranText;
 
-    final displayText = word.glyph.isNotEmpty ? word.glyph : word.text;
-    final fontFamily = QcfFontManager.fontFamilyForPage(word.pageNumber);
-    final effectiveFontSize = fontSize ?? storage.settings.quranFontSize;
+    final displayText = widget.word.glyph.isNotEmpty
+        ? widget.word.glyph
+        : widget.word.text;
+    final fontFamily = QcfFontManager.fontFamilyForPage(widget.word.pageNumber);
+    final effectiveFontSize =
+        widget.fontSize ?? MushafWordWidget.defaultQuranFontSize;
 
-    return GestureDetector(
+    return Listener(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        if (onAyahTap != null) {
-          onAyahTap!(ayah);
-        } else {
-          AyahActionSheet.show(context, ayah);
-        }
-      },
-      onLongPress: () {
-        if (onAyahLongPress != null) {
-          onAyahLongPress!(ayah);
-        } else {
-          AyahActionSheet.show(context, ayah);
-        }
-      },
+      onPointerDown: (e) => _onPointerDown(e, ayah),
+      onPointerMove: _onPointerMove,
+      onPointerUp: (e) => _onPointerUp(e, ayah),
+      onPointerCancel: _onPointerCancel,
       child: Container(
         color: backgroundColor,
         padding: const EdgeInsets.symmetric(horizontal: 0.5),
@@ -137,35 +196,26 @@ class MushafWordWidget extends StatelessWidget {
     final notes = storage.getNotesForAyah(ayah.surahNumber, ayah.ayahNumber);
 
     final ayahNumberText = ArabicSearchNormalizer.toArabicDigits(
-      word.ayahNumber ?? ayah.ayahNumber,
+      widget.word.ayahNumber ?? ayah.ayahNumber,
     );
 
     final glyphColor = isDark
         ? AppColors.darkAccentGold
         : AppColors.lightAccentGold;
 
-    final displayRosette = word.glyph.isNotEmpty
-        ? word.glyph
+    final displayRosette = widget.word.glyph.isNotEmpty
+        ? widget.word.glyph
         : ' ﴿$ayahNumberText﴾ ';
-    final fontFamily = QcfFontManager.fontFamilyForPage(word.pageNumber);
-    final effectiveFontSize = fontSize ?? storage.settings.quranFontSize;
+    final fontFamily = QcfFontManager.fontFamilyForPage(widget.word.pageNumber);
+    final effectiveFontSize =
+        widget.fontSize ?? MushafWordWidget.defaultQuranFontSize;
 
-    return GestureDetector(
+    return Listener(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        if (onAyahTap != null) {
-          onAyahTap!(ayah);
-        } else {
-          AyahActionSheet.show(context, ayah);
-        }
-      },
-      onLongPress: () {
-        if (onAyahLongPress != null) {
-          onAyahLongPress!(ayah);
-        } else {
-          AyahActionSheet.show(context, ayah);
-        }
-      },
+      onPointerDown: (e) => _onPointerDown(e, ayah),
+      onPointerMove: _onPointerMove,
+      onPointerUp: (e) => _onPointerUp(e, ayah),
+      onPointerCancel: _onPointerCancel,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,

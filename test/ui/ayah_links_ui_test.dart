@@ -11,7 +11,6 @@ import 'package:tadbeer/features/ayah_links/ayah_link_repository.dart';
 import 'package:tadbeer/features/quran/data/quran_repository.dart';
 import 'package:tadbeer/features/ayah_links/ayah_link_detail_screen.dart';
 import 'package:tadbeer/features/ayah_links/ayah_links_screen.dart';
-import 'package:tadbeer/features/ayah_links/views/ayah_link_cards_view.dart';
 import 'package:tadbeer/features/ayah_links/views/ayah_link_network_view.dart';
 import 'package:tadbeer/features/ayah_links/views/ayah_link_ordered_view.dart';
 import 'package:tadbeer/features/quran/screens/quran_screen.dart';
@@ -94,7 +93,7 @@ void main() {
     }
 
     testWidgets(
-      'Detail Screen switches smoothly between Network, Ordered, and Cards views',
+      'Detail Screen switches smoothly between Network and Ordered views (Cards view removed)',
       (WidgetTester tester) async {
         late AyahLinkItem link;
         await tester.runAsync(() async {
@@ -123,10 +122,9 @@ void main() {
           find.byType(AyahLinkOrderedView, skipOffstage: false),
           findsOneWidget,
         );
-        expect(
-          find.byType(AyahLinkCardsView, skipOffstage: false),
-          findsOneWidget,
-        );
+
+        // Cards tab should NOT exist
+        expect(find.text('بطاقات'), findsNothing);
 
         // Switch to Ordered view
         final orderedTab = find.text('مرتب');
@@ -138,17 +136,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(AyahLinkOrderedView), findsOneWidget);
 
-        // Switch to Cards view
-        final cardsTab = find.text('بطاقات');
-        expect(cardsTab, findsOneWidget);
-        await tester.runAsync(() async {
-          await tester.tap(cardsTab);
-          await Future.delayed(const Duration(milliseconds: 100));
-        });
-        await tester.pumpAndSettle();
-        expect(find.byType(AyahLinkCardsView), findsOneWidget);
-
-        // Verify verse content is visible in Cards view
+        // Verify verse content is visible in Ordered view
         final verseFinder = find.byWidgetPredicate(
           (w) =>
               w is Text &&
@@ -160,7 +148,7 @@ void main() {
     );
 
     testWidgets(
-      '13: Open in Quran from Ayah Link opens correct page and surah in QuranScreen',
+      'Open in Quran from Ayah Link opens correct page and surah in QuranScreen',
       (WidgetTester tester) async {
         late AyahLinkItem link;
         await tester.runAsync(() async {
@@ -180,14 +168,14 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Switch to Cards view
+        // Switch to Ordered view
         await tester.runAsync(() async {
-          await tester.tap(find.text('بطاقات'));
+          await tester.tap(find.text('مرتب'));
           await Future.delayed(const Duration(milliseconds: 100));
         });
         await tester.pumpAndSettle();
 
-        // Tap verse text box
+        // Tap verse text box in Ordered view
         final verseTextFinder = find.byWidgetPredicate(
           (w) =>
               w is Text &&

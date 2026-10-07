@@ -310,12 +310,16 @@ void main() {
         expect(tappedAyah!.surahNumber, 1);
         expect(tappedAyah!.ayahNumber, 1);
 
-        // Long press on word "ٱلْحَمْدُ" (Ayah 1:2, stable ID 2)
-        await tester.longPress(
-          find.byWidgetPredicate(
-            (w) => w is MushafWordWidget && w.word.text == 'ٱلْحَمْدُ',
+        // Long press on word "ٱلْحَمْدُ" (Ayah 1:2, stable ID 2) - requires 2.0 seconds
+        final gesture = await tester.startGesture(
+          tester.getCenter(
+            find.byWidgetPredicate(
+              (w) => w is MushafWordWidget && w.word.text == 'ٱلْحَمْدُ',
+            ),
           ),
         );
+        await tester.pump(const Duration(milliseconds: 2100));
+        await gesture.up();
         await tester.pumpAndSettle();
         expect(longPressedAyah, isNotNull);
         expect(longPressedAyah!.id, 2);

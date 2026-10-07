@@ -34,6 +34,7 @@ class _QuranScreenState extends State<QuranScreen> {
   late int _currentPageIndex;
   Ayah? _activeSelectedAyah;
   bool _showTopBar = false;
+  bool _suppressNextPageTap = false;
 
   @override
   void initState() {
@@ -104,7 +105,12 @@ class _QuranScreenState extends State<QuranScreen> {
     });
   }
 
-  Future<void> _handleAyahTap(Ayah ayah) async {
+  void _handleAyahTap(Ayah ayah) {
+    // Normal tap toggles top bar via the page-level GestureDetector
+  }
+
+  Future<void> _handleAyahLongPress(Ayah ayah) async {
+    _suppressNextPageTap = true;
     setState(() {
       _activeSelectedAyah = ayah;
     });
@@ -115,19 +121,8 @@ class _QuranScreenState extends State<QuranScreen> {
       setState(() {
         _activeSelectedAyah = null;
       });
-    }
-  }
-
-  Future<void> _handleAyahLongPress(Ayah ayah) async {
-    setState(() {
-      _activeSelectedAyah = ayah;
-    });
-
-    await AyahActionSheet.show(context, ayah);
-
-    if (mounted) {
-      setState(() {
-        _activeSelectedAyah = null;
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _suppressNextPageTap = false;
       });
     }
   }
@@ -218,6 +213,10 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   void _toggleTopBar() {
+    if (_suppressNextPageTap) {
+      _suppressNextPageTap = false;
+      return;
+    }
     setState(() {
       _showTopBar = !_showTopBar;
     });
@@ -273,7 +272,7 @@ class _QuranScreenState extends State<QuranScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          // Search button (to the left of page number)
+          // Search button (in the middle in RTL)
           IconButton(
             icon: const Icon(Icons.search, size: 22),
             tooltip: l10n.search,
@@ -281,6 +280,16 @@ class _QuranScreenState extends State<QuranScreen> {
                 ? AppColors.darkTextPrimary
                 : AppColors.lightTextPrimary,
             onPressed: _openSearch,
+          ),
+          const SizedBox(width: 8),
+          // Drawer menu button (☰) (next to search in RTL)
+          IconButton(
+            icon: const Icon(Icons.menu, size: 22),
+            tooltip: 'القائمة',
+            color: isDark
+                ? AppColors.darkTextPrimary
+                : AppColors.lightTextPrimary,
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           ),
         ],
       ),
