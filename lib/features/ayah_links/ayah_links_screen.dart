@@ -8,27 +8,36 @@ import '../../features/ayah_links/ayah_link_model.dart';
 import '../../features/ayah_links/ayah_link_repository.dart';
 import '../../features/quran/data/quran_repository.dart';
 import 'ayah_link_detail_screen.dart';
+import 'curated_pathways.dart';
+import 'widgets/ayah_link_qr_dialog.dart';
 import 'widgets/create_link_dialog.dart';
 
+/// الشاشة الرئيسية لإدارة وعرض روابط الآيات التدبرية الخاصة بالمستخدم.
+///
 /// Main screen managing the user's personal Ayah Links (روابط الآيات).
 class AyahLinksScreen extends StatefulWidget {
+  /// ينشئ الشاشة الرئيسية لروابط الآيات.
   const AyahLinksScreen({super.key});
 
+  /// ينشئ حالة شاشة روابط الآيات.
   @override
   State<AyahLinksScreen> createState() => _AyahLinksScreenState();
 }
 
+/// الحالة الداخلية لشاشة روابط الآيات المسؤولة عن البحث والإنشاء والاستيراد.
 class _AyahLinksScreenState extends State<AyahLinksScreen> {
   final AyahLinkRepository _repo = AyahLinkRepository();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  /// يحرر موارد متحكم حقل البحث عند إغلاق الشاشة.
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
+  /// يفتح نافذة إنشاء رابط آيات جديد وينتقل لتفاصيله فور إنشائه.
   Future<void> _createLink() async {
     final created = await CreateLinkDialog.show(context);
     if (created != null && mounted) {
@@ -41,10 +50,12 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
     }
   }
 
+  /// يفتح نافذة تعديل بيانات رابط آيات موجود.
   Future<void> _editLink(AyahLinkItem link) async {
     await CreateLinkDialog.show(context, existingLink: link);
   }
 
+  /// يعرض نافذة تأكيد لحذف رابط الآيات المحدد.
   Future<void> _confirmDelete(AyahLinkItem link) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -82,6 +93,194 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
     }
   }
 
+  /// يفتح نافذة استيراد رابط آيات عبر رمز الاستجابة السريعة.
+  Future<void> _importFromQr() async {
+    await AyahLinkQrDialog.showImportDialog(context, repo: _repo);
+  }
+
+  /// يعرض اللوحة السفلية للمسارات التدبرية المقترحة الجاهزة للاستيراد.
+  void _showCuratedPathwaysSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.explore_rounded, color: primary),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'المسارات التدبرية المقترحة',
+                          style: TextStyle(
+                            fontFamily: 'Amiri',
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        onPressed: () => Navigator.pop(sheetCtx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: CuratedPathwaysRegistry.pathways.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (ctx, index) {
+                        final pathway = CuratedPathwaysRegistry.pathways[index];
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.darkSurfaceVariant
+                                : AppColors.comsilkLight,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      pathway.title,
+                                      style: TextStyle(
+                                        fontFamily: 'Amiri',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: primary,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: primary.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      pathway.category,
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                pathway.description,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: isDark
+                                      ? AppColors.nightSubtitle
+                                      : AppColors.daySubtitle,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '${ArabicSearchNormalizer.toArabicDigits(pathway.verses.length)} آيات مرتبطة',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isDark
+                                          ? AppColors.nightSubtitle
+                                          : AppColors.daySubtitle,
+                                    ),
+                                  ),
+                                  ElevatedButton.icon(
+                                    onPressed: () async {
+                                      Navigator.pop(sheetCtx);
+                                      final imported =
+                                          await CuratedPathwaysRegistry
+                                              .importPathway(
+                                        pathway,
+                                        repo: _repo,
+                                      );
+                                      if (mounted) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                AyahLinkDetailScreen(
+                                              linkId: imported.id,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: primary,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.add, size: 16),
+                                    label: const Text(
+                                      'استيراد المسار',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// يبني واجهة شاشة روابط الآيات مع شريط البحث وقائمة الروابط.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -96,6 +295,18 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
             l10n.ayahLinks,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.explore_outlined),
+              tooltip: 'المسارات التدبرية المقترحة',
+              onPressed: _showCuratedPathwaysSheet,
+            ),
+            IconButton(
+              icon: const Icon(Icons.qr_code_scanner_rounded),
+              tooltip: 'استيراد رابط آيات عبر الرمز',
+              onPressed: _importFromQr,
+            ),
+          ],
         ),
         body: ListenableBuilder(
           listenable: UserDataStore.instance,
@@ -193,32 +404,6 @@ class _AyahLinksScreenState extends State<AyahLinksScreen> {
                                         : AppColors.daySubtitle,
                                   ),
                                 ),
-                                if (_searchQuery.isEmpty) ...[
-                                  const SizedBox(height: 20),
-                                  ElevatedButton.icon(
-                                    onPressed: _createLink,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 20,
-                                        vertical: 12,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.add, size: 20),
-                                    label: Text(
-                                      l10n.newAyahLink,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
                               ],
                             ),
                           ),

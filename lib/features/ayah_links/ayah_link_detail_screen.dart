@@ -8,26 +8,34 @@ import '../../features/ayah_links/ayah_link_repository.dart';
 import 'views/ayah_link_network_view.dart';
 import 'views/ayah_link_ordered_view.dart';
 import 'widgets/add_verse_to_link_dialog.dart';
+import 'widgets/ayah_link_qr_dialog.dart';
 import 'widgets/create_link_dialog.dart';
 
+/// شاشة عرض تفاصيل رابط الآيات عبر وضعي الشبكة التفاعلية والقائمة المرتبة.
+///
 /// Screen displaying an Ayah Link across the 2 views:
 /// 1. 🌐 Network Canvas (شبكة)
 /// 2. 📜 Ordered List (مرتب)
 class AyahLinkDetailScreen extends StatefulWidget {
+  /// المعرّف الفريد لرابط الآيات المراد عرضه.
   final String linkId;
 
+  /// ينشئ شاشة تفاصيل رابط الآيات.
   const AyahLinkDetailScreen({super.key, required this.linkId});
 
+  /// ينشئ حالة شاشة تفاصيل رابط الآيات.
   @override
   State<AyahLinkDetailScreen> createState() => _AyahLinkDetailScreenState();
 }
 
+/// الحالة الداخلية لشاشة تفاصيل رابط الآيات وإدارة التبديل بين أنماط العرض.
 class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
   final AyahLinkRepository _repo = AyahLinkRepository();
   final GlobalKey<AyahLinkNetworkViewState> _networkKey =
       GlobalKey<AyahLinkNetworkViewState>();
   late String _activeViewMode;
 
+  /// يهيئ نمط العرض النشط بناءً على آخر وضع محفوظ للرابط.
   @override
   void initState() {
     super.initState();
@@ -36,11 +44,13 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
     _activeViewMode = (mode == 'ordered') ? 'ordered' : 'network';
   }
 
+  /// يبدل نمط العرض بين الشبكة والقائمة المرتبة ويحفظ التفضيل في المستودع.
   void _switchViewMode(String mode) {
     setState(() => _activeViewMode = mode);
     _repo.updateViewState(widget.linkId, viewMode: mode);
   }
 
+  /// يفتح نافذة حوار لإضافة آية قرآنية جديدة إلى الرابط الحالي.
   Future<void> _openAddVerse(AyahLinkItem link) async {
     await AddVerseToLinkDialog.show(
       context,
@@ -49,10 +59,12 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
     );
   }
 
+  /// يفتح نافذة حوار لتعديل عنوان ووصف رابط الآيات الحالي.
   Future<void> _editLink(AyahLinkItem link) async {
     await CreateLinkDialog.show(context, existingLink: link);
   }
 
+  /// يعرض نافذة تأكيد لحذف رابط الآيات نهائياً ثم يعود للشاشة السابقة.
   Future<void> _confirmDelete(AyahLinkItem link) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -91,6 +103,7 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
     }
   }
 
+  /// يبني واجهة شاشة تفاصيل الرابط وشريط التبويب والأزرار العائمة.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -120,6 +133,12 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.qr_code_2_rounded),
+                  tooltip: 'مشاركة عبر رمز الاستجابة السريعة (QR)',
+                  onPressed: () =>
+                      AyahLinkQrDialog.showShareDialog(context, link),
+                ),
                 // Secondary actions popup menu
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),
@@ -232,12 +251,41 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
                 ),
               ],
             ),
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: () => _openAddVerse(link),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addVerse),
+            floatingActionButton: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                FloatingActionButton.extended(
+                  heroTag: 'add_verse_fab',
+                  onPressed: () => _openAddVerse(link),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.addVerse),
+                ),
+                if (_activeViewMode == 'network') ...[
+                  const SizedBox(width: 8),
+                  FloatingActionButton.small(
+                    heroTag: 'center_view_fab',
+                    onPressed: () => _networkKey.currentState?.centerView(),
+                    backgroundColor: isDark
+                        ? AppColors.darkSurface
+                        : AppColors.comsilkLight,
+                    foregroundColor: AppColors.olive,
+                    tooltip: l10n.resetToCenter,
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isDark
+                            ? AppColors.darkSurfaceVariant
+                            : AppColors.lightBorder,
+                      ),
+                    ),
+                    child: const Icon(Icons.center_focus_strong, size: 20),
+                  ),
+                ],
+              ],
             ),
           );
         },
@@ -246,12 +294,14 @@ class _AyahLinkDetailScreenState extends State<AyahLinkDetailScreen> {
   }
 }
 
+/// زر تبويب مخصص للتبديل بين وضع الشبكة ووضع القائمة المرتبة.
 class _ViewTabButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool isActive;
   final VoidCallback onTap;
 
+  /// ينشئ زر التبويب مع العنوان والأيقونة وحالة التفعيل.
   const _ViewTabButton({
     required this.label,
     required this.icon,
@@ -259,6 +309,7 @@ class _ViewTabButton extends StatelessWidget {
     required this.onTap,
   });
 
+  /// يبني عنصر واجهة زر التبويب مع تأثيرات الحركة والتلوين.
   @override
   Widget build(BuildContext context) {
     return InkWell(

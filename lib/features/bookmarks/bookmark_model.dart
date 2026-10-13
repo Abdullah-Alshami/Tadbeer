@@ -1,20 +1,28 @@
-/// Represents a saved Quran bookmark.
+/// يمثل إشارة مرجعية (فاصل قراءة) لآية محددة في المصحف.
 ///
-/// Bookmarks are strictly per-ayah and independent of notes or highlights.
-/// Each bookmark preserves the stable ayah identifier, surah, ayah number,
-/// and Mushaf page for rapid one-tap navigation.
+/// ملاحظة:
+/// الإشارات المرجعية مرتبطة بآية محددة ورقم الصفحة لتمكين القارئ من العودة
+/// السريعة بلمسة واحدة من شاشة "الفواصل" إلى موضع التلاوة.
 class BookmarkItem {
+  /// المعرّف الفريد للإشارة المرجعية.
   final String id;
 
-  // IMPORTANT:
-  // Stable Quran ayah ID (1..6236) to guarantee deterministic
-  // cross-platform reference.
+  /// معرّف الآية الموحد (1..6236) لضمان الربط الدقيق.
   final int ayahId;
+
+  /// رقم السورة التي تقع فيها الآية.
   final int surahNumber;
+
+  /// رقم الآية داخل السورة.
   final int ayahNumber;
+
+  /// رقم صفحة المصحف التي تحتوي على الآية.
   final int page;
+
+  /// تاريخ ووقت إنشاء الإشارة المرجعية.
   final DateTime createdAt;
 
+  /// ينشئ كائن إشارة مرجعية لآية قرآنية.
   const BookmarkItem({
     required this.id,
     required this.ayahId,
@@ -24,8 +32,10 @@ class BookmarkItem {
     required this.createdAt,
   });
 
+  /// المفتاح النصي للآية بصيغة رقم السورة ورقم الآية.
   String get ayahKey => '$surahNumber:$ayahNumber';
 
+  /// يحول بيانات الإشارة المرجعية إلى خريطة JSON للتخزين.
   Map<String, dynamic> toJson() => {
     'id': id,
     'ayahId': ayahId,
@@ -35,6 +45,7 @@ class BookmarkItem {
     'createdAt': createdAt.toIso8601String(),
   };
 
+  /// ينشئ كائن إشارة مرجعية من خريطة بيانات JSON.
   factory BookmarkItem.fromJson(Map<String, dynamic> json) {
     return BookmarkItem(
       id: json['id'] as String,

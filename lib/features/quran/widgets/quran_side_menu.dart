@@ -2,43 +2,45 @@ import 'package:flutter/material.dart';
 
 import '../../../app/localization.dart';
 import '../../../app/theme.dart';
-import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
 import '../data/quran_repository.dart';
-import '../../bookmarks/bookmarks_screen.dart';
-import '../../highlights/highlights_screen.dart';
-import '../../notes/notes_screen.dart';
-import '../../search/search_screen.dart';
 import '../../settings/settings_screen.dart';
+import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 
 /// Side drawer menu providing direct jump navigation across Surahs and Juzs,
-/// as well as fast access to Home, Settings, Notes, Bookmarks, and Search.
+/// as well as fast access to Home and Settings.
+/// القائمة الجانبية للمصحف للتنقل المباشر بين السور والأجزاء والوصول السريع للرئيسية والإعدادات.
 class QuranSideMenu extends StatefulWidget {
   final int currentPage;
   final ValueChanged<int> onPageSelected;
 
+  /// ينشئ ودجت القائمة الجانبية للمصحف الشريف.
   const QuranSideMenu({
     super.key,
     required this.currentPage,
     required this.onPageSelected,
   });
 
+  /// ينشئ الحالة التفاعلية للقائمة الجانبية.
   @override
   State<QuranSideMenu> createState() => _QuranSideMenuState();
 }
 
+/// الحالة التفاعلية للقائمة الجانبية للمصحف الشريف.
 class _QuranSideMenuState extends State<QuranSideMenu>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _filter = '';
 
+  /// يهيئ متحكم التبويبات بين قائمتي السور والأجزاء.
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
   }
 
+  /// يحرر متحكم التبويبات وحقل البحث عند إغلاق القائمة.
   @override
   void dispose() {
     _tabController.dispose();
@@ -46,29 +48,25 @@ class _QuranSideMenuState extends State<QuranSideMenu>
     super.dispose();
   }
 
+  /// يغلق القائمة الجانبية ويعود إلى الشاشة الرئيسية للتطبيق.
   void _navigateToHome(BuildContext context) {
     Navigator.of(context).pop(); // close drawer
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  /// يغلق القائمة الجانبية ويفتح شاشة الإعدادات.
   void _navigateToSettings(BuildContext context) {
     Navigator.of(context).pop(); // close drawer
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
   }
 
-  void _navigateToScreen(BuildContext context, Widget screen) {
-    Navigator.of(context).pop(); // close drawer
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
-  }
-
+  /// يبني واجهة القائمة الجانبية مع التبويبات وحقل تصفية السور.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final repo = QuranRepository.instance;
-    final savedPosition = UserDataStore.instance.readingPosition;
-    final savedSurah = repo.getSurah(savedPosition.surahNumber);
 
     return Drawer(
       backgroundColor: isDark
@@ -79,15 +77,6 @@ class _QuranSideMenuState extends State<QuranSideMenu>
           children: [
             // Top App Bar / Drawer Header
             _buildDrawerHeader(context, isDark, l10n),
-
-            // Top Saved Reading Position Bar
-            _buildReadingPositionBar(
-              context,
-              isDark,
-              l10n,
-              savedSurah,
-              savedPosition,
-            ),
 
             // Tab bar: Surahs / Juzs
             Container(
@@ -188,13 +177,14 @@ class _QuranSideMenuState extends State<QuranSideMenu>
     );
   }
 
+  /// يبني ترويسة القائمة الجانبية التي تعرض اسم التطبيق وأزرار الرئيسية والإعدادات.
   Widget _buildDrawerHeader(
     BuildContext context,
     bool isDark,
     AppStrings l10n,
   ) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.comsilk,
         border: Border(
@@ -205,176 +195,37 @@ class _QuranSideMenuState extends State<QuranSideMenu>
           ),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.olive.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.menu_book_rounded,
-                  color: AppColors.olive,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.appName,
-                      style: TextStyle(
-                        fontFamily: 'Amiri',
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.comsilk : AppColors.oliveDark,
-                      ),
-                    ),
-                    Text(
-                      'مصحف وتدبّر بدون إنترنت',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark
-                            ? AppColors.nightSubtitle
-                            : AppColors.daySubtitle,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Home Button
-              IconButton(
-                icon: const Icon(Icons.home_outlined),
-                tooltip: l10n.home,
-                color: AppColors.olive,
-                onPressed: () => _navigateToHome(context),
-              ),
-              // Settings Button
-              IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                tooltip: l10n.settings,
-                color: AppColors.olive,
-                onPressed: () => _navigateToSettings(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Quick navigation pills
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildQuickActionChip(
-                  icon: Icons.edit_note,
-                  label: l10n.notes,
-                  isDark: isDark,
-                  onTap: () => _navigateToScreen(context, const NotesScreen()),
-                ),
-                const SizedBox(width: 6),
-                _buildQuickActionChip(
-                  icon: Icons.bookmark_outline,
-                  label: l10n.bookmarks,
-                  isDark: isDark,
-                  onTap: () =>
-                      _navigateToScreen(context, const BookmarksScreen()),
-                ),
-                const SizedBox(width: 6),
-                _buildQuickActionChip(
-                  icon: Icons.palette_outlined,
-                  label: l10n.highlights,
-                  isDark: isDark,
-                  onTap: () =>
-                      _navigateToScreen(context, const HighlightsScreen()),
-                ),
-                const SizedBox(width: 6),
-                _buildQuickActionChip(
-                  icon: Icons.search,
-                  label: l10n.search,
-                  isDark: isDark,
-                  onTap: () => _navigateToScreen(context, const SearchScreen()),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionChip({
-    required IconData icon,
-    required String label,
-    required bool isDark,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkBackground : AppColors.comsilkLight,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isDark
-                ? AppColors.darkSurfaceVariant
-                : AppColors.lightBorder,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: AppColors.olive),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isDark
-                    ? AppColors.nightQuranText
-                    : AppColors.dayQuranText,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReadingPositionBar(
-    BuildContext context,
-    bool isDark,
-    AppStrings l10n,
-    dynamic savedSurah,
-    dynamic savedPosition,
-  ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.comsilk,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.olive.withValues(alpha: 0.25)),
-      ),
       child: Row(
         children: [
-          const Icon(Icons.bookmark_added, color: AppColors.olive, size: 20),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.olive.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              FlutterIslamicIcons.quran2,
+              color: AppColors.olive,
+              size: 20,
+            ),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.lastReading,
+                  l10n.appName,
+                  style: TextStyle(
+                    fontFamily: 'Amiri',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.comsilk : AppColors.oliveDark,
+                  ),
+                ),
+                Text(
+                  'مصحف وتدبّر بدون إنترنت',
                   style: TextStyle(
                     fontSize: 11,
                     color: isDark
@@ -382,42 +233,29 @@ class _QuranSideMenuState extends State<QuranSideMenu>
                         : AppColors.daySubtitle,
                   ),
                 ),
-                Text(
-                  l10n.surahAndPage(savedSurah.name, savedPosition.page),
-                  style: TextStyle(
-                    fontFamily: 'Amiri',
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.comsilk : AppColors.oliveDark,
-                  ),
-                ),
               ],
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              widget.onPageSelected(savedPosition.page);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.olive,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              minimumSize: const Size(40, 32),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              l10n.go,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-            ),
+          // Home Button
+          IconButton(
+            icon: const Icon(Icons.home_outlined),
+            tooltip: l10n.home,
+            color: AppColors.olive,
+            onPressed: () => _navigateToHome(context),
+          ),
+          // Settings Button
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: l10n.settings,
+            color: AppColors.olive,
+            onPressed: () => _navigateToSettings(context),
           ),
         ],
       ),
     );
   }
 
+  /// يبني قائمة سور القرآن الكريم القابلة للتصفية والانتقال المباشر.
   Widget _buildSurahsList(
     BuildContext context,
     QuranRepository repo,
@@ -509,6 +347,7 @@ class _QuranSideMenuState extends State<QuranSideMenu>
     );
   }
 
+  /// يبني قائمة أجزاء القرآن الكريم الثلاثين للانتقال المباشر إلى بداية كل جزء.
   Widget _buildJuzsList(
     BuildContext context,
     QuranRepository repo,

@@ -1,20 +1,31 @@
-/// Represents an ayah highlight in Tadbeer.
+/// يمثل تظليل آية في المصحف بأحد الألوان الأربعة الهادئة.
 ///
-/// Stores the stable ayah reference and the highlight color index (0..3).
-/// Highlights are designed to be subtle and never obscure Quranic text.
+/// ملاحظة:
+/// التظليل يربط معرّف الآية الموحد بمؤشر لون (0..3) دون المساس بالنص القرآني،
+/// ويحافظ على وضوح القراءة في الوضعين الفاتح والداكن.
 class HighlightItem {
+  /// المعرّف الفريد لعنصر التظليل.
   final String id;
 
-  // IMPORTANT:
-  // Stable Quran ayah ID (1..6236) to link highlights cleanly
-  // without relying on fragile string offsets.
+  /// معرّف الآية الموحد (1..6236) للربط الثابت.
   final int ayahId;
+
+  /// رقم السورة التي تنتمي إليها الآية.
   final int surahNumber;
+
+  /// رقم الآية داخل السورة.
   final int ayahNumber;
+
+  /// رقم صفحة المصحف التي تقع فيها الآية.
   final int page;
+
+  /// مؤشر اللون المختار للتظليل (من 0 إلى 3).
   final int colorIndex;
+
+  /// تاريخ ووقت إنشاء التظليل.
   final DateTime createdAt;
 
+  /// ينشئ عنصر تظليل جديد للآية المحددة.
   const HighlightItem({
     required this.id,
     required this.ayahId,
@@ -25,8 +36,10 @@ class HighlightItem {
     required this.createdAt,
   });
 
+  /// المفتاح المركب للآية بصيغة (رقم السورة:رقم الآية).
   String get ayahKey => '$surahNumber:$ayahNumber';
 
+  /// يحول بيانات التظليل إلى خريطة JSON للحفظ المحلي.
   Map<String, dynamic> toJson() => {
     'id': id,
     'ayahId': ayahId,
@@ -37,6 +50,7 @@ class HighlightItem {
     'createdAt': createdAt.toIso8601String(),
   };
 
+  /// ينشئ كائن تظليل من خريطة بيانات JSON المحفوظة.
   factory HighlightItem.fromJson(Map<String, dynamic> json) {
     return HighlightItem(
       id: json['id'] as String,

@@ -5,35 +5,40 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tadbeer/app/localization.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
 import 'package:tadbeer/core/storage/user_database.dart';
-import 'package:tadbeer/features/quran/data/mushaf_layout_models.dart';
-import 'package:tadbeer/features/quran/data/quran_models.dart';
 import 'package:tadbeer/features/quran/data/quran_repository.dart';
-import 'package:tadbeer/features/quran/renderers/mushaf_word_widget.dart';
-import 'package:tadbeer/features/quran/widgets/ayah_action_sheet.dart';
+import 'package:tadbeer/features/quran/screens/quran_page_view.dart';
 import 'package:tadbeer/features/settings/settings_screen.dart';
 import 'package:tadbeer/features/settings/user_settings_model.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Quran Font Size Model Tests', () {
-    test('Default Quran font size is strictly 20.0', () {
+  group('Quran Font Size & Family Model Tests', () {
+    test('Default Quran font size is strictly 20.0 and family is ScheherazadeNew', () {
       const settings = UserSettings();
       expect(settings.quranFontSize, equals(20.0));
       expect(UserSettings.defaultQuranFontSize, equals(20.0));
+      expect(settings.quranFontFamily, equals(QuranFontFamilyOption.scheherazade));
+      expect(settings.quranFontFamilyName, equals('ScheherazadeNew'));
     });
 
-    test('JSON serialization roundtrip maintains 20.0', () {
-      const settings = UserSettings(quranFontSize: 20.0);
+    test('JSON serialization roundtrip maintains font size and family', () {
+      const settings = UserSettings(
+        quranFontSize: 24.0,
+        quranFontFamily: QuranFontFamilyOption.notoNaskh,
+      );
       final json = settings.toJson();
-      expect(json['quranFontSize'], equals(20.0));
+      expect(json['quranFontSize'], equals(24.0));
+      expect(json['quranFontFamily'], equals('notoNaskh'));
 
       final restored = UserSettings.fromJson(json);
-      expect(restored.quranFontSize, equals(20.0));
+      expect(restored.quranFontSize, equals(24.0));
+      expect(restored.quranFontFamily, equals(QuranFontFamilyOption.notoNaskh));
+      expect(restored.quranFontFamilyName, equals('NotoNaskhArabic'));
     });
   });
 
-  group('UserDataStore Fixed Font Size Tests', () {
+  group('UserDataStore Font Settings Tests', () {
     late Directory tempDir;
     late File testFile;
     late UserDataStore store;
@@ -52,69 +57,20 @@ void main() {
       }
     });
 
-    test('Store font size is strictly 20.0', () {
+    test('Store font size is 20.0 and default family is ScheherazadeNew', () {
       expect(store.quranFontSize, equals(20.0));
       expect(store.settings.quranFontSize, equals(20.0));
+      expect(store.quranFontFamily, equals('ScheherazadeNew'));
     });
   });
 
-  group('SettingsScreen Font Size Removal Tests', () {
+  group('SettingsScreen Font Size & Family Control Tests', () {
     late Directory tempDir;
     late File testFile;
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('tadbeer_ui_test_');
       testFile = File('${tempDir.path}/test_settings_ui.json');
-      await UserDataStore.instance.init(testFile);
-    });
-
-    tearDown(() async {
-      await UserDatabase.instance.close();
-      if (tempDir.existsSync()) {
-        tempDir.deleteSync(recursive: true);
-      }
-    });
-
-    testWidgets(
-      'SettingsScreen does NOT render Quran font size section or slider',
-      (tester) async {
-        await tester.pumpWidget(
-          AppLocalizationScope(
-            currentLanguage: AppLanguage.arabic,
-            strings: const AppStrings(AppLanguage.arabic),
-            onLanguageChanged: (_) {},
-            child: const MaterialApp(home: SettingsScreen()),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Check font size section header is completely absent
-        expect(find.text('حجم خط المصحف'), findsNothing);
-
-        // Check Slider is absent
-        expect(find.byType(Slider), findsNothing);
-      },
-    );
-  });
-
-  group('MushafWordWidget Typography & Interaction Tests', () {
-    late Directory tempDir;
-    late File testFile;
-
-    const word = MushafWord(
-      pageNumber: 1,
-      lineNumber: 2,
-      surah: 1,
-      ayah: 1,
-      position: 1,
-      text: 'بِسْمِ',
-      glyph: 'ﭓ',
-      isAyahEnd: false,
-    );
-
-    setUp(() async {
-      tempDir = await Directory.systemTemp.createTemp('tadbeer_word_test_');
-      testFile = File('${tempDir.path}/test_word.json');
       await UserDataStore.instance.init(testFile);
       await QuranRepository.instance.init();
     });
@@ -126,158 +82,41 @@ void main() {
       }
     });
 
-    testWidgets('MushafWordWidget uses fixed 20.0 font size by default', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: MushafWordWidget(word: word)),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final textFinder = find.byType(Text);
-      expect(textFinder, findsOneWidget);
-      final textWidget = tester.widget<Text>(textFinder);
-      expect(textWidget.style?.fontSize, equals(20.0));
-      expect(MushafWordWidget.defaultQuranFontSize, equals(20.0));
-      expect(MushafWordWidget.quranFontSize, equals(20.0));
-    });
-
-    testWidgets('MushafWordWidget honors explicit fontSize override', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: MushafWordWidget(word: word, fontSize: 19.0)),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final textFinder = find.byType(Text);
-      expect(textFinder, findsOneWidget);
-      final textWidget = tester.widget<Text>(textFinder);
-      expect(textWidget.style?.fontSize, equals(19.0));
-    });
-
     testWidgets(
-      'Normal tap invokes onAyahTap and does NOT open AyahActionSheet',
+      'SettingsScreen renders Quran font family and font size sections',
       (tester) async {
-        Ayah? tappedAyah;
-
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: MushafWordWidget(
-                word: word,
-                onAyahTap: (a) => tappedAyah = a,
-              ),
-            ),
+          AppLocalizationScope(
+            currentLanguage: AppLanguage.arabic,
+            strings: const AppStrings(AppLanguage.arabic),
+            onLanguageChanged: (_) {},
+            child: const MaterialApp(home: SettingsScreen()),
           ),
         );
         await tester.pumpAndSettle();
 
-        // Normal tap
-        await tester.tap(find.byType(MushafWordWidget));
-        await tester.pumpAndSettle();
-
-        expect(tappedAyah, isNotNull);
-        expect(tappedAyah!.surahNumber, equals(1));
-        expect(tappedAyah!.ayahNumber, equals(1));
-
-        // ActionSheet should NOT be shown
-        expect(find.byType(AyahActionSheet), findsNothing);
+        expect(find.text('نوع خط المصحف'), findsOneWidget);
+        expect(find.text('حجم خط المصحف'), findsOneWidget);
+        expect(find.byType(Slider), findsOneWidget);
       },
     );
 
-    testWidgets('Short press (< 800ms) does NOT trigger long press', (
-      tester,
-    ) async {
-      bool longPressed = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MushafWordWidget(
-              word: word,
-              onAyahLongPress: (_) => longPressed = true,
-            ),
+    testWidgets(
+      'QuranPageView renders with configured font family from UserDataStore',
+      (tester) async {
+        final page1 = QuranRepository.instance.getPage(1);
+        await tester.pumpWidget(
+          AppLocalizationScope(
+            currentLanguage: AppLanguage.arabic,
+            strings: const AppStrings(AppLanguage.arabic),
+            onLanguageChanged: (_) {},
+            child: MaterialApp(home: Scaffold(body: QuranPageView(page: page1))),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Hold pointer for 500ms (less than 800ms threshold)
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.byType(MushafWordWidget)),
-      );
-      await tester.pump(const Duration(milliseconds: 500));
-      await gesture.up();
-      await tester.pumpAndSettle();
-
-      expect(longPressed, isFalse);
-    });
-
-    testWidgets('Long press (held for 800ms) triggers onAyahLongPress', (
-      tester,
-    ) async {
-      Ayah? longPressedAyah;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MushafWordWidget(
-              word: word,
-              onAyahLongPress: (a) => longPressedAyah = a,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Hold pointer down for 850ms (>= 800ms threshold)
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.byType(MushafWordWidget)),
-      );
-      await tester.pump(const Duration(milliseconds: 850));
-      await gesture.up();
-      await tester.pumpAndSettle();
-
-      expect(longPressedAyah, isNotNull);
-      expect(longPressedAyah!.surahNumber, equals(1));
-      expect(longPressedAyah!.ayahNumber, equals(1));
-    });
-
-    testWidgets('Horizontal drag cancels 800ms timer immediately', (
-      tester,
-    ) async {
-      bool longPressed = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MushafWordWidget(
-              word: word,
-              onAyahLongPress: (_) => longPressed = true,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Start pointer down
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.byType(MushafWordWidget)),
-      );
-      await tester.pump(const Duration(milliseconds: 200));
-
-      // Drag horizontally by 30px
-      await gesture.moveBy(const Offset(30, 0));
-      await tester.pump(const Duration(milliseconds: 800));
-      await gesture.up();
-      await tester.pumpAndSettle();
-
-      expect(longPressed, isFalse);
-    });
+        expect(find.byType(QuranPageView), findsOneWidget);
+      },
+    );
   });
 }

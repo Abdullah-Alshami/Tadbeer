@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -11,7 +9,7 @@ import '../../notes/note_model.dart';
 import '../data/quran_models.dart';
 import '../data/quran_repository.dart';
 import '../../ayah_links/widgets/ayah_link_picker_dialog.dart';
-import 'tadbeer_pause_sheet.dart';
+import '../../tadbeer/tadbeer_pause_sheet.dart';
 
 /// Modal action sheet for interacting with an individual Ayah.
 ///
@@ -21,51 +19,57 @@ import 'tadbeer_pause_sheet.dart';
 /// 2. Bookmark toggle (pinning verse for recitation)
 /// 3. Color highlight (4 calm, non-distracting colors)
 /// 4. Copying authentic Quranic verse with reference
+/// نافذة إجراءات منبثقة للتفاعل مع الآية القرآنية (وقفة تدبر، ربط آيات، ملاحظة، علامة مرجعية، تظليل، نسخ).
 class AyahActionSheet extends StatefulWidget {
   final Ayah ayah;
 
+  /// ينشئ نافذة إجراءات الآية القرآنية المحددة.
   const AyahActionSheet({super.key, required this.ayah});
 
-  /// Displays the Ayah action sheet as a calm modal dialog with backdrop blur.
+  /// Displays the Ayah action sheet as a smooth, responsive modal dialog.
+  /// يعرض نافذة إجراءات الآية كحوار منبثق سلس ومتجاوب.
   static Future<void> show(BuildContext context, Ayah ayah) {
     return showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Dismiss',
-      barrierColor: Colors.black.withValues(alpha: 0.45),
-      transitionDuration: const Duration(milliseconds: 220),
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (context, anim1, anim2) => AyahActionSheet(ayah: ayah),
       transitionBuilder: (context, anim1, anim2, child) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: 3 * anim1.value,
-            sigmaY: 3 * anim1.value,
-          ),
-          child: FadeTransition(
-            opacity: anim1,
-            child: ScaleTransition(
-              scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic),
-              child: child,
-            ),
+        final curved = CurvedAnimation(
+          parent: anim1,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.94, end: 1.0).animate(curved),
+            child: child,
           ),
         );
       },
     );
   }
 
+  /// ينشئ الحالة التفاعلية لنافذة إجراءات الآية.
   @override
   State<AyahActionSheet> createState() => _AyahActionSheetState();
 }
 
 /// Backward compatibility alias for AyahActionSheet
+/// اسم بديل متوافق مع الإصدارات السابقة لنافذة إجراءات الآية.
 typedef AyahActionDialog = AyahActionSheet;
 
+/// الحالة التفاعلية لنافذة إجراءات الآية القرآنية.
 class _AyahActionSheetState extends State<AyahActionSheet> {
   bool _isNoteEditorOpen = false;
   bool _isHighlightPickerOpen = false;
   late TextEditingController _noteController;
   String? _existingNoteId;
 
+  /// يهيئ حقل الملاحظة بالبيانات المحفوظة مسبقاً للآية إن وجدت.
   @override
   void initState() {
     super.initState();
@@ -83,12 +87,14 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
     }
   }
 
+  /// يحرر متحكم النص عند إغلاق النافذة.
   @override
   void dispose() {
     _noteController.dispose();
     super.dispose();
   }
 
+  /// يحفظ ملاحظة المستخدم المرتبطة بالآية أو يحذفها إذا كان النص فارغاً.
   Future<void> _saveNote() async {
     final text = _noteController.text.trim();
     if (text.isEmpty && _existingNoteId != null) {
@@ -110,6 +116,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
     }
   }
 
+  /// يبني واجهة نافذة إجراءات الآية وأوضاع تحرير الملاحظة أو اختيار لون التظليل.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -164,17 +171,21 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'سورة ${surah.name} · الآية ${ArabicSearchNormalizer.toArabicDigits(widget.ayah.ayahNumber)}',
-                      style: TextStyle(
-                        fontFamily: 'Amiri',
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.lightPrimaryDark,
+                    Flexible(
+                      child: Text(
+                        'سورة ${surah.name} · الآية ${ArabicSearchNormalizer.toArabicDigits(widget.ayah.ayahNumber)}',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Amiri',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightPrimaryDark,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       'ص ${ArabicSearchNormalizer.toArabicDigits(widget.ayah.page)} · ج ${ArabicSearchNormalizer.toArabicDigits(widget.ayah.juz)}',
                       style: TextStyle(
@@ -199,7 +210,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                     textAlign: TextAlign.center,
                     textDirection: TextDirection.rtl,
                     style: TextStyle(
-                      fontFamily: 'AmiriQuran',
+                      fontFamily: storage.quranFontFamily,
                       fontSize: 19,
                       height: 1.8,
                       color: isDark
@@ -409,7 +420,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                       // Tadbeer Pause action
                       Expanded(
                         child: _ActionButton(
-                          icon: Icons.spa_outlined,
+                          icon: Icons.spa_rounded,
                           label: 'وقفة تدبر',
                           hasActiveIndicator:
                               storage.getTadbeer(
@@ -427,7 +438,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                       // Ayah Links action
                       Expanded(
                         child: _ActionButton(
-                          icon: Icons.hub_outlined,
+                          icon: Icons.hub_rounded,
                           label: 'رابط آيات',
                           onTap: () {
                             Navigator.of(context).pop();
@@ -439,7 +450,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                       // Note action
                       Expanded(
                         child: _ActionButton(
-                          icon: Icons.edit_note,
+                          icon: Icons.edit_note_rounded,
                           label: l10n.addNote,
                           onTap: () => setState(() => _isNoteEditorOpen = true),
                           hasActiveIndicator: _existingNoteId != null,
@@ -450,8 +461,8 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                       Expanded(
                         child: _ActionButton(
                           icon: isBookmarked
-                              ? Icons.bookmark
-                              : Icons.bookmark_border,
+                              ? Icons.bookmark_rounded
+                              : Icons.bookmark_border_rounded,
                           label: isBookmarked
                               ? l10n.removeBookmark
                               : l10n.saveBookmark,
@@ -468,7 +479,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                       // Highlight action
                       Expanded(
                         child: _ActionButton(
-                          icon: Icons.palette_outlined,
+                          icon: Icons.highlight_rounded,
                           label: l10n.highlight,
                           iconColor: currentHighlight != null
                               ? AppColors.highlightColors[currentHighlight
@@ -482,7 +493,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
                       // Copy action
                       Expanded(
                         child: _ActionButton(
-                          icon: Icons.copy,
+                          icon: Icons.content_copy_rounded,
                           label: l10n.copy,
                           onTap: () {
                             final shareText =
@@ -514,6 +525,7 @@ class _AyahActionSheetState extends State<AyahActionSheet> {
   }
 }
 
+/// زر إجراء فردي يعرض أيقونة وتسمية ومؤشر حالة نشط داخل نافذة إجراءات الآية.
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -521,6 +533,7 @@ class _ActionButton extends StatelessWidget {
   final Color? iconColor;
   final bool hasActiveIndicator;
 
+  /// ينشئ زر إجراء لنافذة إجراءات الآية.
   const _ActionButton({
     required this.icon,
     required this.label,
@@ -529,6 +542,7 @@ class _ActionButton extends StatelessWidget {
     this.hasActiveIndicator = false,
   });
 
+  /// يبني واجهة زر الإجراء مع الأيقونة والنص ونقطة التنبيه عند التفعيل.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -567,17 +581,20 @@ class _ActionButton extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: isDark
-                    ? AppColors.nightQuranText
-                    : AppColors.dayQuranText,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: isDark
+                      ? AppColors.nightQuranText
+                      : AppColors.dayQuranText,
+                ),
               ),
             ),
           ],

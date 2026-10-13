@@ -6,11 +6,12 @@ import 'package:tadbeer/app/app.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
 import 'package:tadbeer/features/quran/data/quran_repository.dart';
 import 'package:tadbeer/features/home/home_screen.dart';
-import 'package:tadbeer/features/tadabbur/tadbeer_intro_screen.dart';
+import 'package:tadbeer/features/tadbeer/tadbeer_intro_screen.dart';
 import 'package:tadbeer/features/notes/note_editor_screen.dart';
 import 'package:tadbeer/features/notes/notes_screen.dart';
 import 'package:tadbeer/features/quran/screens/quran_screen.dart';
 import 'package:tadbeer/features/search/search_screen.dart';
+import 'package:tadbeer/features/settings/settings_screen.dart';
 
 void main() {
   late Directory tempDir;
@@ -124,7 +125,16 @@ void main() {
       expect(find.text('الملاحظات'), findsOneWidget);
       expect(find.text('المحفوظات'), findsOneWidget);
       expect(find.text('المميزة'), findsOneWidget);
-      expect(find.text('البحث'), findsOneWidget);
+      expect(find.text('التنبيهات'), findsOneWidget);
+
+      // Verify side menu button is removed and settings button replaced it
+      expect(find.byIcon(Icons.menu_rounded), findsNothing);
+      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+
+      // Verify tapping settings button opens SettingsScreen
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsScreen), findsOneWidget);
     });
 
     testWidgets(
@@ -148,23 +158,22 @@ void main() {
         // Should be on QuranScreen
         expect(find.byType(QuranScreen), findsOneWidget);
 
-        // 1. Verify top bar is hidden by default
+        // 1. Verify reading bars are hidden by default
         final animatedOpacityFinder = find.descendant(
-          of: find.byType(QuranScreen),
+          of: find.byType(SafeArea),
           matching: find.byType(AnimatedOpacity),
-        );
-        expect(animatedOpacityFinder, findsOneWidget);
+        ).first;
         AnimatedOpacity opacityWidget = tester.widget(animatedOpacityFinder);
         expect(opacityWidget.opacity, 0.0);
 
-        // 2. Tap on QuranScreen to reveal animated overlay top bar
-        await tester.tap(find.byType(QuranScreen));
+        // 2. Tap on page margin to reveal reading bars
+        await tester.tapAt(const Offset(30, 80));
         await tester.pumpAndSettle();
 
         opacityWidget = tester.widget(animatedOpacityFinder);
         expect(opacityWidget.opacity, 1.0);
 
-        // Verify Search button and Page Number button exist in top bar
+        // Verify Search button and Page Number button exist
         expect(find.byTooltip('البحث'), findsOneWidget);
         expect(find.textContaining('ص '), findsWidgets);
 
@@ -183,14 +192,14 @@ void main() {
         await tester.tap(find.text('إلغاء'));
         await tester.pumpAndSettle();
 
-        // 4. Tap page to hide top bar again
-        await tester.tap(find.byType(QuranScreen));
+        // 4. Tap page margin to hide reading bars again
+        await tester.tapAt(const Offset(30, 80));
         await tester.pumpAndSettle();
         opacityWidget = tester.widget(animatedOpacityFinder);
         expect(opacityWidget.opacity, 0.0);
 
         // Reveal again to test search navigation
-        await tester.tap(find.byType(QuranScreen));
+        await tester.tapAt(const Offset(30, 80));
         await tester.pumpAndSettle();
 
         // Tapping Search opens SearchScreen
@@ -258,5 +267,63 @@ void main() {
       expect(find.byType(NotesScreen), findsOneWidget);
       expect(find.text('وقفة تدبرية'), findsOneWidget);
     });
+
+    testWidgets(
+      'TadbeerIntroScreen adapts gracefully to small phone viewport without overflow',
+      (WidgetTester tester) async {
+        // Set small phone screen size (360x600)
+        tester.view.physicalSize = const Size(360, 600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(const TadbeerApp());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TadbeerIntroScreen), findsOneWidget);
+        expect(find.byType(Image), findsOneWidget);
+        expect(find.text('متابعة'), findsOneWidget);
+        expect(find.text('لا تظهر لي هذه النافذة مرة أخرى'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'HomeScreen adapts gracefully to small phone viewport (360x600) without overflow',
+      (WidgetTester tester) async {
+        await tester.runAsync(() async {
+          await UserDataStore.instance.updateSettings(
+            UserDataStore.instance.settings.copyWith(
+              hideTadbeerIntroPermanently: true,
+            ),
+          );
+        });
+
+        // Set small phone screen size (360x600)
+        tester.view.physicalSize = const Size(360, 600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(const TadbeerApp());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(HomeScreen), findsOneWidget);
+        expect(find.text('المصحف'), findsOneWidget);
+        expect(find.text('الأدعية'), findsOneWidget);
+        expect(find.text('معاني الكلمات'), findsOneWidget);
+        expect(find.text('الملاحظات'), findsOneWidget);
+        expect(find.text('روابط الآيات'), findsOneWidget);
+        expect(find.text('المحفوظات'), findsOneWidget);
+        expect(find.text('المميزة'), findsOneWidget);
+        expect(find.text('التنبيهات'), findsOneWidget);
+        expect(find.text('النسخ الاحتياطي'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }
+

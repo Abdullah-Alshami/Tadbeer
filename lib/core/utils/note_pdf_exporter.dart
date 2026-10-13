@@ -7,6 +7,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
 import '../../features/notes/note_model.dart';
+import '../../features/quran/data/quran_repository.dart';
+import 'arabic_search_normalizer.dart';
 
 /// Service for exporting an individual Tadbeer note (Ayah Note or Free Note) to PDF.
 ///
@@ -18,20 +20,48 @@ import '../../features/notes/note_model.dart';
 class NotePdfExporter {
   NotePdfExporter._();
 
+  static pw.Font? _cachedRegular;
+  static pw.Font? _cachedBold;
+  static pw.Font? _cachedQuran;
+
+  /// الخط العربي العادي المحمّل في الذاكرة لتصدير ملفات PDF.
+  static pw.Font? get regularFont => _cachedRegular;
+
+  /// الخط العربي العريض المحمّل في الذاكرة لتصدير ملفات PDF.
+  static pw.Font? get boldFont => _cachedBold;
+
+  /// خط المصحف القرآني المحمّل في الذاكرة لتصدير الآيات داخل PDF.
+  static pw.Font? get quranFont => _cachedQuran;
+
+  /// Ensures Arabic TrueType fonts (Amiri-Regular, Amiri-Bold, AmiriQuran) are cached in memory.
+  static Future<void> ensureFontsLoaded() => _ensureFontsLoaded();
+
+  /// تحميل خطوط TrueType العربية من أصول التطبيق وحفظها في الذاكرة المؤقتة.
+  static Future<void> _ensureFontsLoaded() async {
+    if (_cachedRegular == null) {
+      final fontData = await rootBundle.load('assets/fonts/Amiri-Regular.ttf');
+      _cachedRegular = pw.Font.ttf(fontData);
+    }
+    if (_cachedBold == null) {
+      final fontBoldData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
+      _cachedBold = pw.Font.ttf(fontBoldData);
+    }
+    if (_cachedQuran == null) {
+      final fontQuranData = await rootBundle.load(
+        'assets/fonts/AmiriQuran-Regular.ttf',
+      );
+      _cachedQuran = pw.Font.ttf(fontQuranData);
+    }
+  }
+
   /// Generates a PDF file for a single note and writes it to cache storage.
   static Future<File> generateNotePdf(NoteItem note) async {
+    await _ensureFontsLoaded();
     final pdf = pw.Document();
 
-    final fontData = await rootBundle.load('assets/fonts/Amiri-Regular.ttf');
-    final ttfRegular = pw.Font.ttf(fontData);
-
-    final fontBoldData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
-    final ttfBold = pw.Font.ttf(fontBoldData);
-
-    final fontQuranData = await rootBundle.load(
-      'assets/fonts/AmiriQuran-Regular.ttf',
-    );
-    final ttfQuran = pw.Font.ttf(fontQuranData);
+    final ttfRegular = _cachedRegular!;
+    final ttfBold = _cachedBold!;
+    final ttfQuran = _cachedQuran!;
 
     final isAyahNote = note.isAyahNote;
 
@@ -96,7 +126,22 @@ class NotePdfExporter {
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
                         pw.Text(
-                          'سورة رقم ${note.surahNumber} · آية رقم ${note.ayahNumber}',
+                          () {
+                            final surahNum = note.surahNumber;
+                            final ayahNum = note.ayahNumber;
+                            final surah = (surahNum != null &&
+                                    surahNum >= 1 &&
+                                    surahNum <= 114)
+                                ? QuranRepository.instance.getSurah(surahNum)
+                                : null;
+                            final surahTitle = surah != null
+                                ? 'سورة ${surah.name}'
+                                : 'سورة رقم ${surahNum ?? ''}';
+                            final ayahStr = ayahNum != null
+                                ? 'الآية ${ArabicSearchNormalizer.toArabicDigits(ayahNum)}'
+                                : '';
+                            return '$surahTitle · $ayahStr';
+                          }(),
                           style: pw.TextStyle(
                             font: ttfBold,
                             fontSize: 14,
@@ -105,7 +150,7 @@ class NotePdfExporter {
                         ),
                         if (note.page != null)
                           pw.Text(
-                            'صفحة ${note.page}',
+                            'صفحة ${ArabicSearchNormalizer.toArabicDigits(note.page!)}',
                             style: pw.TextStyle(
                               font: ttfRegular,
                               fontSize: 12,

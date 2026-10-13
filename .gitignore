@@ -1,9 +1,15 @@
-# Miscellaneous
+# =============================================================================
+# Miscellaneous & OS Files
+# =============================================================================
 *.class
 *.log
 *.pyc
+*.pyo
 *.swp
+*.swo
+*~
 .DS_Store
+Thumbs.db
 .atom/
 .build/
 .buildlog/
@@ -11,17 +17,22 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+__pycache__/
 
-# IntelliJ related
+# =============================================================================
+# IDEs & Editors (IntelliJ, Android Studio, VS Code, Cursor, Antigravity)
+# =============================================================================
 *.iml
 *.ipr
 *.iws
 .idea/
-
-# Visual Studio Code
 .vscode/
+.cursor/
+.gemini/
 
-# Flutter/Dart/Pub related
+# =============================================================================
+# Flutter / Dart / Pub
+# =============================================================================
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
@@ -32,19 +43,22 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+.widget_preview/
 
-# Output packages
+# =============================================================================
+# Compiled Packages, Symbols & Obfuscation Maps
+# =============================================================================
 *.apk
 *.aab
 *.ipa
-
-# Symbolication related
+*.ap_
+*.dex
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# =============================================================================
+# Android
+# =============================================================================
 /android/app/debug
 /android/app/profile
 /android/app/release
@@ -52,11 +66,69 @@ app.*.map.json
 /android/local.properties
 /android/captures/
 /android/gradle-app.setting
+/android/.cxx/
+/android/build/
 
-# Ephemeral files
+# =============================================================================
+# iOS & macOS (Xcode / CocoaPods)
+# =============================================================================
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*sync/
+**/ios/**/.sconsign.dblite
+**/ios/**/.tags*
+**/ios/**/.vagrant/
+**/ios/**/DerivedData/
+**/ios/**/Icon?
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/profile
+**/ios/**/xcuserdata
+**/ios/.generated/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/ephemeral/
+**/macos/Pods/
+**/macos/.symlinks/
+**/macos/**/DerivedData/
+**/macos/**/xcuserdata
+
+# =============================================================================
+# Linux & Windows Ephemeral Files
+# =============================================================================
 /linux/flutter/ephemeral/
+/linux/flutter/generated_plugin_registrant.cc
+/linux/flutter/generated_plugin_registrant.h
+/linux/flutter/generated_plugins.cmake
 /windows/flutter/ephemeral/
-/macos/Flutter/ephemeral/
+/windows/flutter/generated_plugin_registrant.cc
+/windows/flutter/generated_plugin_registrant.h
+/windows/flutter/generated_plugins.cmake
 
-# Widget Preview related
-.widget_preview/
+# =============================================================================
+# Signing Keys, Secrets & Local Review Dumps (NEVER COMMIT)
+# =============================================================================
+/android/key.properties
+*.jks
+*.keystore
+*.p12
+*.cer
+*.mobileprovision
+.env
+.env.*
+/assets/quran/word_meanings_excluded.json
+/tool/manual_reviews.json
+/tool/__pycache__/

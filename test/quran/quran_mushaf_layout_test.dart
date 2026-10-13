@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tadbeer/app/localization.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
-import 'package:tadbeer/features/quran/data/mushaf_layout_models.dart';
 import 'package:tadbeer/features/quran/data/quran_repository.dart';
 import 'package:tadbeer/features/quran/screens/quran_page_view.dart';
 import 'package:tadbeer/features/quran/screens/quran_screen.dart';
@@ -37,101 +36,72 @@ void main() {
     }
   });
 
-  group('Madinah Mushaf V2 (1421H) Architecture Tests', () {
+  group('Madinah Mushaf 604-Page Architecture Tests', () {
     test('QuranRepository loads exactly 604 authentic Mushaf pages', () {
       final repo = QuranRepository.instance;
-      expect(repo.mushafPages.length, 604);
+      expect(repo.pages.length, 604);
 
-      // Verify Page 1 (Al-Fatihah) has exactly 8 lines, all centered, with word ranges
-      final page1 = repo.getMushafPage(1);
-      expect(page1.totalLines, 8);
-      expect(page1.lines.length, 8);
-      expect(page1.lines.first.type, MushafLineType.header);
-      expect(page1.lines.first.surahNumber, 1);
-      expect(page1.lines.first.isCentered, isTrue);
-      expect(page1.lines[1].type, MushafLineType.text); // Ayah 1:1 Bismillah
-      expect(page1.lines[1].isCentered, isTrue);
-      expect(page1.lines[1].firstWordId, 1);
-      expect(page1.lines[1].lastWordId, 5);
+      // Verify Page 1 (Al-Fatihah, 7 ayahs)
+      final page1 = repo.getPage(1);
+      expect(page1.pageNumber, 1);
+      expect(page1.ayahs.length, 7);
+      expect(page1.surahNumbers, contains(1));
+      expect(page1.ayahs.first.surahNumber, 1);
+      expect(page1.ayahs.first.ayahNumber, 1);
+      expect(page1.ayahs.last.ayahNumber, 7);
 
-      // Verify Page 2 (Al-Baqarah 1-5) has exactly 8 lines, all centered
-      final page2 = repo.getMushafPage(2);
-      expect(page2.totalLines, 8);
-      expect(page2.lines.length, 8);
-      expect(page2.lines[0].type, MushafLineType.header);
-      expect(page2.lines[0].surahNumber, 2);
-      expect(page2.lines[0].isCentered, isTrue);
-      expect(page2.lines[1].type, MushafLineType.bismillah);
-      expect(page2.lines[1].surahNumber, 2);
-      expect(page2.lines[1].isCentered, isTrue);
-      expect(page2.lines[2].type, MushafLineType.text);
-      expect(page2.lines[2].isCentered, isTrue);
+      // Verify Page 2 (Al-Baqarah 1-5)
+      final page2 = repo.getPage(2);
+      expect(page2.pageNumber, 2);
+      expect(page2.surahNumbers, contains(2));
+      expect(page2.ayahs.first.surahNumber, 2);
+      expect(page2.ayahs.first.ayahNumber, 1);
+      expect(page2.ayahs.last.ayahNumber, 5);
 
-      // Verify standard page (e.g. Page 3) has 15 lines, all text lines are justified (not centered)
-      final page3 = repo.getMushafPage(3);
-      expect(page3.totalLines, 15);
-      expect(page3.lines.length, 15);
-      for (final l in page3.lines) {
-        expect(l.isCentered, isFalse);
-        expect(l.firstWordId, isNotNull);
-        expect(l.lastWordId, isNotNull);
-      }
+      // Verify Page 3 (Al-Baqarah 6-16)
+      final page3 = repo.getPage(3);
+      expect(page3.pageNumber, 3);
+      expect(page3.ayahs.first.surahNumber, 2);
+      expect(page3.ayahs.first.ayahNumber, 6);
+      expect(page3.ayahs.last.ayahNumber, 16);
 
-      // Verify Page 76 ends with Surah 4 Header on line 15
-      final page76 = repo.getMushafPage(76);
-      expect(page76.lines.last.type, MushafLineType.header);
-      expect(page76.lines.last.surahNumber, 4);
-      expect(page76.lines.last.isCentered, isTrue);
+      // Verify Page 76 ends with Surah 3, Page 77 starts Surah 4
+      final page76 = repo.getPage(76);
+      expect(page76.surahNumbers, contains(3));
+      final page77 = repo.getPage(77);
+      expect(page77.surahNumbers, contains(4));
+      expect(page77.ayahs.first.surahNumber, 4);
+      expect(page77.ayahs.first.ayahNumber, 1);
 
-      // Verify Page 77 starts with Bismillah for Surah 4 on line 1
-      final page77 = repo.getMushafPage(77);
-      expect(page77.lines.first.type, MushafLineType.bismillah);
-      expect(page77.lines.first.surahNumber, 4);
-      expect(page77.lines.first.isCentered, isTrue);
+      // Verify Page 187 (At-Tawbah) starts with Surah 9 Ayah 1
+      final page187 = repo.getPage(187);
+      expect(page187.surahNumbers, contains(9));
+      expect(page187.ayahs.first.surahNumber, 9);
+      expect(page187.ayahs.first.ayahNumber, 1);
 
-      // Verify Page 187 (At-Tawbah) has header on line 1 and NO Bismillah
-      final page187 = repo.getMushafPage(187);
-      expect(page187.lines[0].type, MushafLineType.header);
-      expect(page187.lines[0].surahNumber, 9);
-      expect(page187.lines[0].isCentered, isTrue);
-      expect(page187.lines[1].type, MushafLineType.text); // Verse 9:1
-      expect(page187.lines[1].isCentered, isFalse); // Justified
-
-      // Verify Page 604 contains Surahs 112, 113, 114 with exact QUL alignments
-      final page604 = repo.getMushafPage(604);
-      expect(page604.lines.length, 15);
+      // Verify Page 604 contains Surahs 112, 113, 114
+      final page604 = repo.getPage(604);
       expect(page604.surahNumbers, containsAll([112, 113, 114]));
-      expect(page604.lines[0].type, MushafLineType.header); // 112
-      expect(page604.lines[1].type, MushafLineType.bismillah);
-      expect(page604.lines[2].isCentered, isFalse); // justified
-      expect(page604.lines[3].isCentered, isTrue); // centered surah end
-      expect(page604.lines[13].isCentered, isTrue); // centered An-Nas 114:5
-      expect(page604.lines[14].isCentered, isTrue); // centered An-Nas 114:6
+      expect(page604.ayahs.last.surahNumber, 114);
+      expect(page604.ayahs.last.ayahNumber, 6);
     });
 
     test(
-      'Every MushafWord connects to a valid Ayah and Stable ID (1..6236)',
+      'Every Ayah connects to a valid Page, Surah, and Stable ID (1..6236)',
       () {
         final repo = QuranRepository.instance;
-        int totalWordCount = 0;
-        final visitedAyahIds = <int>{};
+        expect(repo.allAyahs.length, 6236);
 
-        for (int p = 1; p <= 604; p++) {
-          final page = repo.getMushafPage(p);
-          for (final line in page.lines) {
-            if (line.type == MushafLineType.text) {
-              for (final word in line.words) {
-                totalWordCount++;
-                final ayah = repo.getAyah(word.surah, word.ayah);
-                expect(ayah, isNotNull);
-                expect(ayah!.id, inInclusiveRange(1, 6236));
-                visitedAyahIds.add(ayah.id);
-              }
-            }
-          }
+        final visitedAyahIds = <int>{};
+        for (final ayah in repo.allAyahs) {
+          expect(ayah.id, inInclusiveRange(1, 6236));
+          expect(ayah.page, inInclusiveRange(1, 604));
+          expect(ayah.surahNumber, inInclusiveRange(1, 114));
+          expect(ayah.ayahNumber, greaterThan(0));
+          expect(ayah.text.trim().isNotEmpty, isTrue);
+          visitedAyahIds.add(ayah.id);
         }
 
-        expect(totalWordCount, 83665);
         expect(visitedAyahIds.length, 6236);
       },
     );

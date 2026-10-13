@@ -3,31 +3,40 @@ import 'package:flutter/material.dart';
 import '../../app/localization.dart';
 import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
+import '../../core/utils/arabic_search_normalizer.dart';
 import '../ayah_links/ayah_links_screen.dart';
 import '../backup/backup_screen.dart';
 import '../bookmarks/bookmarks_screen.dart';
+import '../duas/duas_screen.dart';
+import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import '../highlights/highlights_screen.dart';
 import '../notes/notes_screen.dart';
+import '../quran/data/quran_repository.dart';
 import '../quran/screens/quran_screen.dart';
 import '../reminders/reminders_screen.dart';
 import '../search/search_screen.dart';
 import '../settings/settings_screen.dart';
-import '../../shared/widgets/app_drawer.dart';
+import '../word_meanings/word_meanings_screen.dart';
 
+/// الشاشة الرئيسية لتطبيق تدبير وتضم لوحة الوصول السريع للمصحف وأدوات التدبر.
+///
 /// Serene, elegant Islamic dashboard for Tadbeer (تَدْبِير).
 ///
 /// Features:
 /// - Distinctive Brand Header with 'Amiri' calligraphy and subtle spiritual arch
-/// - 4 Primary Cards:
-///   1. المصحف (قراءة وتدبر)
-///   2. الأدعية (أدعية من الكتاب والسنة)
+/// - Prominent Quran Hero Card with live reading resume status
+/// - 4 Core Contemplation & Quranic Grid Cards:
+///   1. الأدعية (أدعية من الكتاب والسنة)
+///   2. معاني كلمات القرآن (معجم غريب الألفاظ)
 ///   3. الملاحظات (خواطرك وتدبراتك)
-///   4. روابط الآيات (الآيات المرتبطة)
-/// - Secondary Tools Section ("أدوات إضافية"):
-///   المحفوظات، المميزة، البحث، التذكيرات، النسخ الاحتياطي، الإعدادات
+///   4. روابط الآيات (العلاقات الموضوعية)
+/// - Balanced Secondary Tools:
+///   المحفوظات، المميزة، التذكيرات، النسخ الاحتياطي
 class HomeScreen extends StatelessWidget {
+  /// ينشئ الشاشة الرئيسية للتطبيق.
   const HomeScreen({super.key});
 
+  /// يبني واجهة الشاشة الرئيسية المتجاوبة مع مختلف أحجام الشاشات.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -36,160 +45,139 @@ class HomeScreen extends StatelessWidget {
     return Directionality(
       textDirection: context.currentLanguage.direction,
       child: Scaffold(
-        drawer: const AppDrawer(),
         body: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 580),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Top App Bar with Menu and Settings round buttons
-                    _buildTopBar(context, l10n, isDark),
-                    const SizedBox(height: 12),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final h = constraints.maxHeight;
+              final isCompact = h < 740;
+              final isVeryCompact = h < 640;
 
-                    // Serene Brand Header
-                    _buildBrandHeader(context, l10n, isDark),
-                    const SizedBox(height: 24),
+              // Spacing tokens
+              final paddingH = isVeryCompact ? 14.0 : (isCompact ? 18.0 : 20.0);
+              final paddingV = isVeryCompact ? 6.0 : (isCompact ? 10.0 : 14.0);
 
-                    // 4 Main Sections
-                    // 1. المصحف
-                    _PrimaryCard(
-                      icon: Icons.menu_book_rounded,
-                      title: l10n.quran,
-                      subtitle: 'قراءة وتدبر',
-                      accentColor: AppColors.primary(context),
-                      badgeBackground: isDark
-                          ? const Color(0xFF263A2F)
-                          : const Color(0xFFE5EDE6),
-                      onTap: () {
-                        final pos = UserDataStore.instance.readingPosition;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => QuranScreen(initialPage: pos.page),
-                          ),
-                        );
-                      },
-                    ),
+              final spaceTopBar = isVeryCompact ? 4.0 : (isCompact ? 6.0 : 10.0);
+              final spaceBrandToSearch = isVeryCompact ? 6.0 : (isCompact ? 10.0 : 14.0);
+              final spaceSearchToHero = isVeryCompact ? 8.0 : (isCompact ? 12.0 : 16.0);
+              final spaceHeroToCore = isVeryCompact ? 8.0 : (isCompact ? 10.0 : 14.0);
+              final spaceCoreToSection = isVeryCompact ? 8.0 : (isCompact ? 12.0 : 18.0);
+              final spaceSectionToSecondary = isVeryCompact ? 6.0 : (isCompact ? 10.0 : 14.0);
 
-                    // 2. الأدعية
-                    _PrimaryCard(
-                      icon: Icons.front_hand_outlined,
-                      title: 'الأدعية',
-                      subtitle: 'أدعية من الكتاب والسنة',
-                      accentColor: AppColors.accentGold(context),
-                      badgeBackground: isDark
-                          ? const Color(0xFF332D20)
-                          : const Color(0xFFF7F1E2),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: isDark
-                                ? AppColors.darkSurface
-                                : AppColors.lightSurface,
-                            content: Text(
-                              'قسم الأدعية قيد التطوير قريبًا بإذن الله',
-                              style: TextStyle(
-                                color: AppColors.textPrimary(context),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.symmetric(
+                  horizontal: paddingH,
+                  vertical: paddingV,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 580),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                              // Top App Bar with Settings round button
+                              _buildTopBar(
+                                context,
+                                l10n,
+                                isDark,
+                                isCompact: isCompact,
+                                isVeryCompact: isVeryCompact,
                               ),
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: AppColors.border(context),
+                              SizedBox(height: spaceTopBar),
+
+                              // Serene Brand Header
+                              _buildBrandHeader(
+                                context,
+                                l10n,
+                                isDark,
+                                isCompact: isCompact,
+                                isVeryCompact: isVeryCompact,
                               ),
-                            ),
-                            duration: const Duration(seconds: 2),
+                              SizedBox(height: spaceBrandToSearch),
+
+                              // Prominent Global Search Entry Bar
+                              _buildGlobalSearchBar(
+                                context,
+                                l10n,
+                                isDark,
+                                isCompact: isCompact,
+                                isVeryCompact: isVeryCompact,
+                              ),
+                              SizedBox(height: spaceSearchToHero),
+
+                              // 1. Featured Quran Hero Card
+                              _QuranHeroCard(
+                                onTap: () {
+                                  final pos = UserDataStore.instance.readingPosition;
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => QuranScreen(initialPage: pos.page),
+                                    ),
+                                  );
+                                },
+                                isCompact: isCompact,
+                                isVeryCompact: isVeryCompact,
+                              ),
+                              SizedBox(height: spaceHeroToCore),
+
+                              // 2. Core 2x2 Feature Cards Grid
+                              _buildCoreFeaturesGrid(
+                                context,
+                                l10n,
+                                isDark,
+                                isCompact: isCompact,
+                                isVeryCompact: isVeryCompact,
+                              ),
+                              SizedBox(height: spaceCoreToSection),
+
+                              // Secondary Tools Section Header ("أدوات إضافية")
+                              _buildSectionHeader(
+                                context,
+                                isDark,
+                                isCompact: isCompact,
+                                isVeryCompact: isVeryCompact,
+                              ),
+                              SizedBox(height: spaceSectionToSecondary),
+
+                              // Secondary Tools (المحفوظات، المميزة، التذكيرات، النسخ الاحتياطي)
+                              _buildSecondaryToolsGrid(
+                                context,
+                                l10n,
+                                isDark,
+                                isCompact: isCompact,
+                                isVeryCompact: isVeryCompact,
+                              ),
+                              SizedBox(height: isVeryCompact ? 4.0 : 8.0),
+                            ],
                           ),
-                        );
-                      },
-                    ),
-
-                    // 3. الملاحظات
-                    _PrimaryCard(
-                      icon: Icons.edit_note_rounded,
-                      title: l10n.notes,
-                      subtitle: 'خواطرك وتدبراتك',
-                      accentColor: isDark
-                          ? const Color(0xFF8BAA96)
-                          : const Color(0xFF4A6B56),
-                      badgeBackground: isDark
-                          ? const Color(0xFF243028)
-                          : const Color(0xFFE8EFEA),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const NotesScreen(),
-                          ),
-                        );
-                      },
-                    ),
-
-                    // 4. روابط الآيات
-                    _PrimaryCard(
-                      icon: Icons.hub_outlined,
-                      title: l10n.ayahLinks,
-                      subtitle: 'الآيات المرتبطة',
-                      accentColor: isDark
-                          ? const Color(0xFFC0A66B)
-                          : const Color(0xFF8B6B38),
-                      badgeBackground: isDark
-                          ? const Color(0xFF302B20)
-                          : const Color(0xFFF6F0E4),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AyahLinksScreen(),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Secondary Tools Section Header ("أدوات إضافية")
-                    _buildSectionHeader(context, isDark),
-                    const SizedBox(height: 18),
-
-                    // Secondary Tools (المحفوظات، المميزة، البحث، التذكيرات، النسخ الاحتياطي، الإعدادات)
-                    _buildSecondaryToolsGrid(context, l10n, isDark),
-                    const SizedBox(height: 16),
-                  ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
+          );
+        }
 
-  Widget _buildTopBar(BuildContext context, AppStrings l10n, bool isDark) {
+  /// يبني الشريط العلوي للشاشة مع زر الإعدادات الدائري.
+  Widget _buildTopBar(
+    BuildContext context,
+    AppStrings l10n,
+    bool isDark, {
+    required bool isCompact,
+    required bool isVeryCompact,
+  }) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Drawer Menu Button
-        Builder(
-          builder: (ctx) => _TopBarIconButton(
-            icon: Icons.menu_rounded,
-            tooltip: 'القائمة الجانبية',
-            onTap: () => Scaffold.of(ctx).openDrawer(),
-          ),
-        ),
-
-        // Settings Button
+        // Settings Button (in place of the side menu button)
         _TopBarIconButton(
           icon: Icons.settings_outlined,
           tooltip: l10n.settings,
+          isCompact: isCompact,
+          isVeryCompact: isVeryCompact,
           onTap: () {
             Navigator.push(
               context,
@@ -201,7 +189,20 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBrandHeader(BuildContext context, AppStrings l10n, bool isDark) {
+  /// يبني ترويسة هوية التطبيق مع القوس الزخرفي والشعار النصي.
+  Widget _buildBrandHeader(
+    BuildContext context,
+    AppStrings l10n,
+    bool isDark, {
+    required bool isCompact,
+    required bool isVeryCompact,
+  }) {
+    final titleSize = isVeryCompact ? 28.0 : (isCompact ? 32.0 : 38.0);
+    final taglineSize = isVeryCompact ? 11.5 : (isCompact ? 12.5 : 13.5);
+    final archW = isVeryCompact ? 130.0 : (isCompact ? 150.0 : 180.0);
+    final archH = isVeryCompact ? 46.0 : (isCompact ? 56.0 : 70.0);
+    final iconLeafSize = isVeryCompact ? 12.0 : (isCompact ? 13.5 : 15.0);
+
     return Column(
       children: [
         Stack(
@@ -209,7 +210,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             // Soft atmospheric arch in the background
             CustomPaint(
-              size: const Size(180, 70),
+              size: Size(archW, archH),
               painter: _ArchBackgroundPainter(
                 color: (isDark ? AppColors.darkAccentGold : AppColors.olive)
                     .withValues(alpha: isDark ? 0.08 : 0.06),
@@ -217,7 +218,7 @@ class HomeScreen extends StatelessWidget {
             ),
             // Brand Title
             Padding(
-              padding: const EdgeInsets.only(top: 10),
+              padding: EdgeInsets.only(top: isVeryCompact ? 4 : (isCompact ? 6 : 10)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,7 +227,7 @@ class HomeScreen extends StatelessWidget {
                     l10n.appName,
                     style: TextStyle(
                       fontFamily: 'Amiri',
-                      fontSize: 38,
+                      fontSize: titleSize,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                       color: isDark
@@ -240,7 +241,7 @@ class HomeScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 4),
                     child: Icon(
                       Icons.eco_rounded,
-                      size: 15,
+                      size: iconLeafSize,
                       color:
                           (isDark
                                   ? AppColors.darkPrimary
@@ -253,11 +254,11 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 1),
         Text(
           l10n.appTagline,
           style: TextStyle(
-            fontSize: 13.5,
+            fontSize: taglineSize,
             color: isDark
                 ? AppColors.darkTextSecondary
                 : AppColors.lightTextSecondary,
@@ -268,72 +269,251 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, bool isDark) {
+  /// يبني شريط الانتقال السريع إلى شاشة البحث الشامل.
+  Widget _buildGlobalSearchBar(
+    BuildContext context,
+    AppStrings l10n,
+    bool isDark, {
+    required bool isCompact,
+    required bool isVeryCompact,
+  }) {
+    final padV = isVeryCompact ? 8.0 : (isCompact ? 10.0 : 12.0);
+    final padH = isVeryCompact ? 12.0 : (isCompact ? 14.0 : 16.0);
+    final iconSize = isVeryCompact ? 19.0 : (isCompact ? 20.0 : 22.0);
+    final fontSize = isVeryCompact ? 12.5 : (isCompact ? 13.0 : 14.0);
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SearchScreen()),
+        );
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: padH, vertical: padV),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.comsilk,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search_rounded, color: AppColors.olive, size: iconSize),
+            SizedBox(width: isVeryCompact ? 8 : 12),
+            Expanded(
+              child: Text(
+                l10n.searchGlobalPlaceholder,
+                style: TextStyle(
+                  fontFamily: 'Amiri',
+                  fontSize: fontSize,
+                  color: isDark
+                      ? AppColors.nightSubtitle
+                      : AppColors.daySubtitle,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(
+              Icons.tune_rounded,
+              size: isVeryCompact ? 16 : 18,
+              color: AppColors.olive.withValues(alpha: 0.6),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// يبني فاصل القسم الخاص بالأدوات الإضافية.
+  Widget _buildSectionHeader(
+    BuildContext context,
+    bool isDark, {
+    required bool isCompact,
+    required bool isVeryCompact,
+  }) {
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
     final textColor = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
+    final fontSize = isVeryCompact ? 11.5 : (isCompact ? 12.0 : 13.0);
 
     return Row(
       children: [
         Expanded(
-          child: Divider(color: borderColor, thickness: 1, endIndent: 16),
+          child: Divider(color: borderColor, thickness: 1, endIndent: 12),
         ),
         Text(
           'أدوات إضافية',
           style: TextStyle(
-            fontSize: 13,
+            fontSize: fontSize,
             fontWeight: FontWeight.bold,
             color: textColor,
             letterSpacing: 0.3,
           ),
         ),
-        Expanded(child: Divider(color: borderColor, thickness: 1, indent: 16)),
+        Expanded(child: Divider(color: borderColor, thickness: 1, indent: 12)),
       ],
     );
   }
 
+  /// يبني شبكة البطاقات الأربع الأساسية (الأدعية، معاني الكلمات، الملاحظات، روابط الآيات).
+  Widget _buildCoreFeaturesGrid(
+    BuildContext context,
+    AppStrings l10n,
+    bool isDark, {
+    required bool isCompact,
+    required bool isVeryCompact,
+  }) {
+    final gap = isVeryCompact ? 8.0 : (isCompact ? 10.0 : 12.0);
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _GridFeatureCard(
+                icon: FlutterIslamicIcons.prayer,
+                title: l10n.duas,
+                subtitle: 'أدعية الكتاب والسنة',
+                accentColor: isDark
+                    ? AppColors.darkAccentGold
+                    : const Color(0xFF8B6B38),
+                badgeBackground: isDark
+                    ? const Color(0xFF332D20)
+                    : const Color(0xFFF7F1E2),
+                isCompact: isCompact,
+                isVeryCompact: isVeryCompact,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DuasScreen()),
+                  );
+                },
+              ),
+            ),
+            SizedBox(width: gap),
+            Expanded(
+              child: _GridFeatureCard(
+                icon: Icons.library_books_rounded,
+                title: 'معاني الكلمات',
+                subtitle: 'غريب ألفاظ القرآن',
+                accentColor: AppColors.primary(context),
+                badgeBackground: isDark
+                    ? const Color(0xFF263A2F)
+                    : const Color(0xFFE5EDE6),
+                isCompact: isCompact,
+                isVeryCompact: isVeryCompact,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const WordMeaningsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: gap),
+        Row(
+          children: [
+            Expanded(
+              child: _GridFeatureCard(
+                icon: Icons.edit_note_rounded,
+                title: l10n.notes,
+                subtitle: 'خواطرك وتدبراتك',
+                accentColor: isDark
+                    ? const Color(0xFF8BAA96)
+                    : const Color(0xFF3D6652),
+                badgeBackground: isDark
+                    ? const Color(0xFF243028)
+                    : const Color(0xFFE8EFEA),
+                isCompact: isCompact,
+                isVeryCompact: isVeryCompact,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotesScreen()),
+                  );
+                },
+              ),
+            ),
+            SizedBox(width: gap),
+            Expanded(
+              child: _GridFeatureCard(
+                icon: Icons.hub_rounded,
+                title: l10n.ayahLinks,
+                subtitle: 'الربط والعلاقات',
+                accentColor: isDark
+                    ? AppColors.darkAccentGold
+                    : const Color(0xFFA88A55),
+                badgeBackground: isDark
+                    ? const Color(0xFF302B20)
+                    : const Color(0xFFF6F0E4),
+                isCompact: isCompact,
+                isVeryCompact: isVeryCompact,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AyahLinksScreen()),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// يبني صف الأدوات المساندة (المحفوظات، المميزة، التذكيرات، النسخ الاحتياطي).
   Widget _buildSecondaryToolsGrid(
     BuildContext context,
     AppStrings l10n,
-    bool isDark,
-  ) {
+    bool isDark, {
+    required bool isCompact,
+    required bool isVeryCompact,
+  }) {
     final tools = [
       _SecondaryToolItem(
-        icon: Icons.bookmark_outline_rounded,
+        icon: Icons.bookmark_rounded,
         label: l10n.bookmarks,
+        isCompact: isCompact,
+        isVeryCompact: isVeryCompact,
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const BookmarksScreen()),
         ),
       ),
       _SecondaryToolItem(
-        icon: Icons.palette_outlined,
+        icon: Icons.highlight_rounded,
         label: l10n.highlights,
+        isCompact: isCompact,
+        isVeryCompact: isVeryCompact,
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const HighlightsScreen()),
         ),
       ),
       _SecondaryToolItem(
-        icon: Icons.search_rounded,
-        label: l10n.search,
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SearchScreen()),
-        ),
-      ),
-      _SecondaryToolItem(
-        icon: Icons.notifications_none_rounded,
+        icon: Icons.alarm_rounded,
         label: l10n.reminders,
+        isCompact: isCompact,
+        isVeryCompact: isVeryCompact,
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const RemindersScreen()),
         ),
       ),
       _SecondaryToolItem(
-        icon: Icons.cloud_upload_outlined,
+        icon: Icons.backup_rounded,
         label: l10n.backup,
+        isCompact: isCompact,
+        isVeryCompact: isVeryCompact,
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const BackupScreen()),
@@ -343,7 +523,7 @@ class HomeScreen extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth >= 360) {
+        if (constraints.maxWidth >= 320) {
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: tools.map((t) => Expanded(child: t)).toList(),
@@ -351,29 +531,38 @@ class HomeScreen extends StatelessWidget {
         }
         return Wrap(
           alignment: WrapAlignment.center,
-          spacing: 16,
-          runSpacing: 14,
-          children: tools.map((t) => SizedBox(width: 68, child: t)).toList(),
+          spacing: 12,
+          runSpacing: 10,
+          children: tools.map((t) => SizedBox(width: 58, child: t)).toList(),
         );
       },
     );
   }
 }
 
+/// زر أيقونة دائري مخصص للشريط العلوي في الشاشة الرئيسية.
 class _TopBarIconButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
+  final bool isCompact;
+  final bool isVeryCompact;
 
+  /// ينشئ زر أيقونة دائري للشريط العلوي.
   const _TopBarIconButton({
     required this.icon,
     required this.tooltip,
     required this.onTap,
+    this.isCompact = false,
+    this.isVeryCompact = false,
   });
 
+  /// يبني واجهة الزر الدائري مع التلميح النصي.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padding = isVeryCompact ? 7.0 : (isCompact ? 8.5 : 10.0);
+    final iconSize = isVeryCompact ? 18.0 : (isCompact ? 19.0 : 20.0);
 
     return Material(
       color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
@@ -393,10 +582,10 @@ class _TopBarIconButton extends StatelessWidget {
         child: Tooltip(
           message: tooltip,
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(padding),
             child: Icon(
               icon,
-              size: 20,
+              size: iconSize,
               color: isDark ? AppColors.darkTextPrimary : AppColors.oliveDark,
             ),
           ),
@@ -406,39 +595,48 @@ class _TopBarIconButton extends StatelessWidget {
   }
 }
 
-class _PrimaryCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color accentColor;
-  final Color badgeBackground;
+/// البطاقة البارزة للمصحف الشريف مع حالة استئناف القراءة من آخر موضع.
+class _QuranHeroCard extends StatelessWidget {
   final VoidCallback onTap;
+  final bool isCompact;
+  final bool isVeryCompact;
 
-  const _PrimaryCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.accentColor,
-    required this.badgeBackground,
+  /// ينشئ بطاقة المصحف البارزة في الشاشة الرئيسية.
+  const _QuranHeroCard({
     required this.onTap,
+    this.isCompact = false,
+    this.isVeryCompact = false,
   });
 
+  /// يبني واجهة بطاقة المصحف ومعلومات السورة والصفحة الحالية.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pos = UserDataStore.instance.readingPosition;
+    final surah = QuranRepository.instance.getSurah(pos.surahNumber);
+    final readingSubtitle =
+        'سورة ${surah.name} · صفحة ${ArabicSearchNormalizer.toArabicDigits(pos.page)}';
+
+    final padH = isVeryCompact ? 12.0 : 16.0;
+    final padV = isVeryCompact ? 7.0 : (isCompact ? 9.5 : 13.0);
+    final badgeDim = isVeryCompact ? 36.0 : (isCompact ? 40.0 : 46.0);
+    final iconDim = isVeryCompact ? 19.0 : (isCompact ? 21.0 : 24.0);
+    final titleSize = isVeryCompact ? 16.0 : (isCompact ? 17.0 : 18.0);
+    final subtitleSize = isVeryCompact ? 11.0 : (isCompact ? 11.8 : 12.5);
+    final resumeSize = isVeryCompact ? 9.5 : (isCompact ? 10.0 : 10.5);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          color: (isDark ? AppColors.darkAccentGold : AppColors.lightAccentGold)
+              .withValues(alpha: 0.35),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.035),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.035),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -448,52 +646,93 @@ class _PrimaryCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           hoverColor: Theme.of(context).colorScheme.primary
               .withValues(alpha: 0.06),
           splashColor: Theme.of(context).colorScheme.primary
               .withValues(alpha: 0.1),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: EdgeInsets.symmetric(horizontal: padH, vertical: padV),
             child: Row(
               children: [
-                // Icon illustration badge
+                // Noble Quran Icon Badge
                 Container(
-                  width: 54,
-                  height: 54,
+                  width: badgeDim,
+                  height: badgeDim,
                   decoration: BoxDecoration(
-                    color: badgeBackground,
-                    borderRadius: BorderRadius.circular(16),
+                    color: (isDark ? AppColors.darkPrimary : AppColors.lightPrimary)
+                        .withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: accentColor.withValues(alpha: 0.25),
+                      color: AppColors.primary(context).withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
-                  child: Icon(icon, color: accentColor, size: 28),
+                  child: Icon(
+                    FlutterIslamicIcons.quran2,
+                    color: AppColors.primary(context),
+                    size: iconDim,
+                  ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: isVeryCompact ? 10 : 14),
 
-                // Title and Subtitle
+                // Title & Reading Position
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontFamily: 'Amiri',
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.lightTextPrimary,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              context.l10n.quran,
+                              style: TextStyle(
+                                fontFamily: 'Amiri',
+                                fontSize: titleSize,
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.lightTextPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: (isDark
+                                        ? AppColors.darkAccentGold
+                                        : AppColors.lightAccentGold)
+                                    .withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'استئناف القراءة',
+                                style: TextStyle(
+                                  fontSize: resumeSize,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? AppColors.darkAccentGold
+                                      : const Color(0xFF8B6B38),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        subtitle,
+                        readingSubtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12.5,
+                          fontSize: subtitleSize,
                           color: isDark
                               ? AppColors.darkTextSecondary
                               : AppColors.lightTextSecondary,
@@ -506,12 +745,11 @@ class _PrimaryCard extends StatelessWidget {
                 // Navigation Chevron
                 Icon(
                   Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color:
-                      (isDark
-                              ? AppColors.darkAccentGold
-                              : AppColors.lightAccentGold)
-                          .withValues(alpha: 0.85),
+                  size: isVeryCompact ? 12 : 14,
+                  color: (isDark
+                          ? AppColors.darkAccentGold
+                          : AppColors.lightAccentGold)
+                      .withValues(alpha: 0.8),
                 ),
               ],
             ),
@@ -522,20 +760,155 @@ class _PrimaryCard extends StatelessWidget {
   }
 }
 
+/// بطاقة ميزة رئيسية ضمن الشبكة الرباعية في الشاشة الرئيسية.
+class _GridFeatureCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accentColor;
+  final Color badgeBackground;
+  final VoidCallback onTap;
+  final bool isCompact;
+  final bool isVeryCompact;
+
+  /// ينشئ بطاقة ميزة رئيسية للشبكة.
+  const _GridFeatureCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accentColor,
+    required this.badgeBackground,
+    required this.onTap,
+    this.isCompact = false,
+    this.isVeryCompact = false,
+  });
+
+  /// يبني واجهة بطاقة الميزة مع شارة الأيقونة والعنوان والوصف الفرعي.
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padH = isVeryCompact ? 10.0 : 12.0;
+    final padV = isVeryCompact ? 7.0 : (isCompact ? 9.0 : 12.0);
+    final badgeDim = isVeryCompact ? 34.0 : (isCompact ? 38.0 : 42.0);
+    final iconDim = isVeryCompact ? 18.0 : (isCompact ? 20.0 : 22.0);
+    final titleSize = isVeryCompact ? 13.5 : (isCompact ? 14.5 : 15.5);
+    final subtitleSize = isVeryCompact ? 10.0 : (isCompact ? 10.8 : 11.5);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          width: 1.1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          splashColor: accentColor.withValues(alpha: 0.12),
+          hoverColor: accentColor.withValues(alpha: 0.06),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: padH, vertical: padV),
+            child: Row(
+              children: [
+                // Icon Illustration Badge
+                Container(
+                  width: badgeDim,
+                  height: badgeDim,
+                  decoration: BoxDecoration(
+                    color: badgeBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.25),
+                      width: 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(icon, color: accentColor, size: iconDim),
+                  ),
+                ),
+                SizedBox(width: isVeryCompact ? 8 : 10),
+
+                // Title and Subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontFamily: 'Amiri',
+                            fontSize: titleSize,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.lightTextPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: subtitleSize,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// عنصر أداة ثانوية يظهر في الشريط السفلي للشاشة الرئيسية.
 class _SecondaryToolItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool isCompact;
+  final bool isVeryCompact;
 
+  /// ينشئ عنصر أداة ثانوية.
   const _SecondaryToolItem({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.isCompact = false,
+    this.isVeryCompact = false,
   });
 
+  /// يبني واجهة زر الأداة الثانوية مع التسمية النصية أسفله.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final btnDim = isVeryCompact ? 38.0 : (isCompact ? 42.0 : 46.0);
+    final iconDim = isVeryCompact ? 17.0 : (isCompact ? 19.0 : 21.0);
+    final gap = isVeryCompact ? 3.0 : 5.0;
+    final labelSize = isVeryCompact ? 10.0 : (isCompact ? 10.5 : 11.0);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -543,25 +916,25 @@ class _SecondaryToolItem extends StatelessWidget {
         Material(
           color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             side: BorderSide(
               color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-              width: 1.2,
+              width: 1.1,
             ),
           ),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             splashColor: Theme.of(context).colorScheme.primary
                 .withValues(alpha: 0.15),
             hoverColor: Theme.of(context).colorScheme.primary
                 .withValues(alpha: 0.08),
             child: SizedBox(
-              width: 50,
-              height: 50,
+              width: btnDim,
+              height: btnDim,
               child: Icon(
                 icon,
-                size: 22,
+                size: iconDim,
                 color: isDark
                     ? AppColors.darkAccentGold
                     : AppColors.lightPrimary,
@@ -569,18 +942,20 @@ class _SecondaryToolItem extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: isDark
-                ? AppColors.darkTextPrimary
-                : AppColors.lightTextPrimary,
+        SizedBox(height: gap),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: labelSize,
+              fontWeight: FontWeight.w600,
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : AppColors.lightTextPrimary,
+            ),
           ),
         ),
       ],
@@ -588,11 +963,14 @@ class _SecondaryToolItem extends StatelessWidget {
   }
 }
 
+/// رسام مخصص لرسم قوس إسلامي هادئ خلف عنوان التطبيق في الشاشة الرئيسية.
 class _ArchBackgroundPainter extends CustomPainter {
   final Color color;
 
+  /// ينشئ رسام القوس الخلفي باللون المحدد.
   _ArchBackgroundPainter({required this.color});
 
+  /// يرسم مسار القوس الإسلامي على لوحة الرسم.
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -614,6 +992,7 @@ class _ArchBackgroundPainter extends CustomPainter {
     canvas.drawPath(path, paint);
   }
 
+  /// يحدد ما إذا كان يجب إعادة رسم القوس عند تغير اللون.
   @override
   bool shouldRepaint(covariant _ArchBackgroundPainter oldDelegate) =>
       oldDelegate.color != color;

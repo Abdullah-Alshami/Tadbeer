@@ -9,8 +9,8 @@ import 'package:tadbeer/features/ayah_links/ayah_link_model.dart';
 import 'package:tadbeer/features/bookmarks/bookmark_model.dart';
 import 'package:tadbeer/features/highlights/highlight_model.dart';
 import 'package:tadbeer/features/notes/note_model.dart';
-import 'package:tadbeer/features/tadabbur/tadbeer_model.dart';
-import 'package:tadbeer/features/quran/data/reading_position_model.dart';
+import 'package:tadbeer/features/tadbeer/tadbeer_model.dart';
+import 'package:tadbeer/features/quran/data/quran_models.dart';
 import 'package:tadbeer/features/reminders/reminder_model.dart';
 
 void main() {

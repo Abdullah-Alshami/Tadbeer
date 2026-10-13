@@ -8,19 +8,26 @@ import '../ayah_link_repository.dart';
 import '../../quran/data/quran_repository.dart';
 import '../../quran/screens/quran_screen.dart';
 
+/// واجهة عرض القائمة المرتبة لرابط الآيات للقراءة المتسلسلة الهادئة.
+///
 /// Calm, serene ordered list view of an Ayah Link.
 ///
 /// Designed for peaceful reading and linear recitation of connected verses.
 class AyahLinkOrderedView extends StatelessWidget {
+  /// بيانات رابط الآيات المعروض.
   final AyahLinkItem link;
+
+  /// دالة الاستدعاء عند الضغط على زر إضافة آية.
   final VoidCallback onAddVerse;
 
+  /// ينشئ واجهة العرض المرتب لرابط الآيات.
   const AyahLinkOrderedView({
     super.key,
     required this.link,
     required this.onAddVerse,
   });
 
+  /// يفتح نافذة حوار لتعديل ملاحظة التدبر الخاصة بآية ضمن الرابط.
   Future<void> _editNote(
     BuildContext context,
     AyahLinkVerse verse,
@@ -72,6 +79,7 @@ class AyahLinkOrderedView extends StatelessWidget {
     }
   }
 
+  /// يعرض نافذة تأكيد لإزالة آية محددة من الرابط.
   Future<void> _confirmRemove(BuildContext context, AyahLinkVerse verse) async {
     final surah = QuranRepository.instance.getSurah(verse.surahNumber);
     final confirmed = await showDialog<bool>(
@@ -107,6 +115,7 @@ class AyahLinkOrderedView extends StatelessWidget {
     }
   }
 
+  /// يبني قائمة الآيات المرتبة مع بطاقة العنوان وملاحظات التدبر.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;

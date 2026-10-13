@@ -4,24 +4,25 @@ import '../../core/storage/user_data_store.dart';
 import '../quran/data/quran_models.dart';
 import 'bookmark_model.dart';
 
-/// Repository for managing per-ayah bookmarks.
+/// مستودع إدارة الإشارات المرجعية (الفواصل) في التطبيق.
 ///
-/// EDUCATIONAL NOTE:
-/// Bookmarks are strictly distinct from notes and highlights.
-/// They allow users to quickly pin ayahs for future recitation.
+/// يوفر واجهة لإضافة وحذف وفحص حالة الفاصل للآية بالاعتماد على [UserDataStore].
 class BookmarkRepository {
   final UserDataStore _store;
 
+  /// ينشئ مستودع الفواصل المرجعية بالاعتماد على مخزن بيانات المستخدم.
   BookmarkRepository([UserDataStore? store])
     : _store = store ?? UserDataStore.instance;
 
+  /// يعيد قائمة جميع الإشارات المرجعية المحفوظة.
   List<BookmarkItem> get allBookmarks => _store.bookmarks;
 
+  /// يتحقق مما إذا كانت الآية المحددة محفوظة في الفواصل المرجعية.
   bool isBookmarked(int surahNumber, int ayahNumber) {
     return _store.hasBookmark(surahNumber, ayahNumber);
   }
 
-  /// Toggles bookmark state for the specified ayah.
+  /// تبديل حالة الفاصل للآية (إضافة إذا لم تكن موجودة، وحذف إذا كانت مضافة).
   Future<bool> toggleBookmark(Ayah ayah) async {
     final currentlyBookmarked = isBookmarked(ayah.surahNumber, ayah.ayahNumber);
     if (currentlyBookmarked) {
@@ -46,6 +47,7 @@ class BookmarkRepository {
     }
   }
 
+  /// يحذف إشارة مرجعية محددة بواسطة معرّفها.
   Future<void> removeBookmark(String id) async {
     await _store.removeBookmark(id);
   }

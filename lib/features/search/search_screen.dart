@@ -1,82 +1,132 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../app/localization.dart';
 import '../../app/theme.dart';
-import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
-import '../../features/notes/note_model.dart';
-import '../../features/quran/data/quran_models.dart';
 import '../../features/quran/data/quran_repository.dart';
-import '../notes/notes_screen.dart';
-import '../quran/screens/quran_screen.dart';
+import 'search_provider.dart';
 
-/// Instant offline search across both Quranic verses and user reflection notes.
+/// شاشة البحث الشامل والفوري بدون إنترنت عبر جميع أقسام تطبيق تدبير.
 ///
-/// EDUCATIONAL NOTE:
-/// Search Architecture:
-/// 1. Arabic text is normalized (removing diacritics, unifying Alef/Taa Marbuta variants)
-///    strictly for substring index matching.
-/// 2. Original Uthmani Quranic text is NEVER modified.
-/// 3. Returns dual categorized results: verified Quranic ayahs and user notes.
+/// Instant, offline unified search across all searchable sections in Tadbeer.
+///
+/// Features:
+/// - Extensible [SearchRegistry] querying all registered [SearchProvider]s concurrently.
+/// - Section filter chips ("الكل", "المصحف", "الملاحظات", "التدبر", etc.).
+/// - Graceful error isolation per provider.
+/// - Deep linking and navigation into Quran pages, notes, links, and reminders.
+/// - Direct Ayah selection support when [returnToCaller] is true.
 class SearchScreen extends StatefulWidget {
+  /// ما إذا كان يجب إرجاع الآية المختارة إلى الشاشة المستدعية بدلاً من فتح المصحف.
   final bool returnToCaller;
 
+  /// ينشئ شاشة البحث الشامل.
   const SearchScreen({super.key, this.returnToCaller = false});
 
+  /// ينشئ حالة شاشة البحث الشامل.
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
+/// الحالة الداخلية لشاشة البحث الشامل وإدارة التصفية وتنفيذ الاستعلامات.
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
-  List<Ayah> _ayahResults = [];
-  List<NoteItem> _noteResults = [];
-  String _currentQuery = '';
+  Timer? _debounceTimer;
 
+  String _currentQuery = '';
+  String? _selectedProviderId;
+  bool _isLoading = false;
+  List<SearchResultItem> _results = [];
+
+  /// يلغي مؤقت الانتظار ويحرر متحكم النص عند إغلاق الشاشة.
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
+  /// يتعامل مع تغير نص البحث مع تأخير زمني قصير لمنع الاستعلامات المتكررة أثناء الكتابة.
   void _onSearchChanged(String query) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 180), () {
+      _executeSearch(query);
+    });
+  }
+
+  /// ينفذ عملية البحث في السجل المركزي ويحدث قائمة النتائج المعروضة.
+  Future<void> _executeSearch(String query) async {
     final trimmed = query.trim();
-    if (trimmed == _currentQuery) return;
-    _currentQuery = trimmed;
+    if (trimmed == _currentQuery && _results.isNotEmpty) return;
+
+    setState(() {
+      _currentQuery = trimmed;
+    });
 
     if (trimmed.isEmpty) {
       setState(() {
-        _ayahResults = [];
-        _noteResults = [];
+        _results = [];
+        _isLoading = false;
       });
       return;
     }
 
-    final repo = QuranRepository.instance;
-    final ayahs = repo.searchAyahs(trimmed, limit: 40);
+    setState(() {
+      _isLoading = true;
+    });
 
-    final normalizedQuery = ArabicSearchNormalizer.normalize(trimmed);
-    final notes = UserDataStore.instance.notes.where((note) {
-      final title = ArabicSearchNormalizer.normalize(note.title ?? '');
-      final content = ArabicSearchNormalizer.normalize(note.content);
-      final verse = ArabicSearchNormalizer.normalize(note.ayahText ?? '');
-      return title.contains(normalizedQuery) ||
-          content.contains(normalizedQuery) ||
-          verse.contains(normalizedQuery);
-    }).toList();
+    final results = await SearchRegistry.instance.searchAll(
+      trimmed,
+      context,
+      providerId: _selectedProviderId,
+    );
+
+    if (!mounted) return;
 
     setState(() {
-      _ayahResults = ayahs;
-      _noteResults = notes;
+      _results = results;
+      _isLoading = false;
     });
   }
 
+  /// يغير فلتر القسم المحدد ويعيد تنفيذ البحث عند وجود نص استعلام.
+  void _onSelectFilter(String? providerId) {
+    if (_selectedProviderId == providerId) return;
+    setState(() {
+      _selectedProviderId = providerId;
+    });
+    if (_currentQuery.isNotEmpty) {
+      _executeSearch(_currentQuery);
+    }
+  }
+
+  /// يعالج النقر على نتيجة البحث إما بإرجاع الآية للمستدعي أو فتح الوجهة المرتبطة.
+  void _handleItemTap(SearchResultItem item) {
+    if (widget.returnToCaller &&
+        item.surahNumber != null &&
+        item.ayahNumber != null) {
+      final ayah = QuranRepository.instance.getAyah(
+        item.surahNumber!,
+        item.ayahNumber!,
+      );
+      if (ayah != null) {
+        Navigator.pop(context, ayah);
+        return;
+      }
+    }
+
+    item.onTap?.call(context);
+  }
+
+  /// يبني واجهة شاشة البحث الشامل مع شرائح التصفية وقائمة النتائج.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasQuery = _currentQuery.isNotEmpty;
-    final hasResults = _ayahResults.isNotEmpty || _noteResults.isNotEmpty;
+    final providers = SearchRegistry.instance.providers;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -92,15 +142,15 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         body: Column(
           children: [
-            // Search Input Box
+            // Search Input Field
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: TextField(
                 controller: _controller,
                 autofocus: true,
                 onChanged: _onSearchChanged,
                 decoration: InputDecoration(
-                  hintText: l10n.searchPlaceholder,
+                  hintText: l10n.searchGlobalPlaceholder,
                   hintStyle: TextStyle(
                     fontFamily: 'Amiri',
                     fontSize: 14,
@@ -114,7 +164,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           icon: const Icon(Icons.clear, size: 20),
                           onPressed: () {
                             _controller.clear();
-                            _onSearchChanged('');
+                            _executeSearch('');
                           },
                         )
                       : null,
@@ -128,21 +178,91 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
 
-            // Search Results Body
+            // Filter Chips Carousel
+            SizedBox(
+              height: 48,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                children: [
+                  // "الكل" Filter Chip
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: FilterChip(
+                      label: Text(
+                        l10n.searchAll,
+                        style: TextStyle(
+                          fontFamily: 'Amiri',
+                          fontSize: 13,
+                          fontWeight: _selectedProviderId == null
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      selected: _selectedProviderId == null,
+                      selectedColor: AppColors.olive.withValues(alpha: 0.25),
+                      checkmarkColor: AppColors.oliveDark,
+                      onSelected: (_) => _onSelectFilter(null),
+                    ),
+                  ),
+
+                  // Per-section filter chips
+                  ...providers.map((p) {
+                    final isSelected = _selectedProviderId == p.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: FilterChip(
+                        avatar: Icon(
+                          p.icon,
+                          size: 16,
+                          color: isSelected ? AppColors.oliveDark : null,
+                        ),
+                        label: Text(
+                          p.getSectionTitle(context),
+                          style: TextStyle(
+                            fontFamily: 'Amiri',
+                            fontSize: 13,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.olive.withValues(alpha: 0.25),
+                        checkmarkColor: AppColors.oliveDark,
+                        onSelected: (_) => _onSelectFilter(p.id),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1),
+
+            // Search Content / Results Body
             Expanded(
-              child: !hasQuery
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.olive,
+                        ),
+                      ),
+                    )
+                  : !hasQuery
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.search,
+                            Icons.search_rounded,
                             size: 64,
                             color: AppColors.border(context),
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            l10n.searchPlaceholder,
+                            l10n.searchGlobalPlaceholder,
                             style: TextStyle(
                               fontFamily: 'Amiri',
                               fontSize: 15,
@@ -154,7 +274,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ],
                       ),
                     )
-                  : !hasResults
+                  : _results.isEmpty
                   ? Center(
                       child: Text(
                         l10n.noSearchResults,
@@ -167,39 +287,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                       ),
                     )
-                  : ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        // Verses Group
-                        if (_ayahResults.isNotEmpty) ...[
-                          _buildGroupHeader(
-                            title: l10n.quranResults,
-                            count: _ayahResults.length,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 8),
-                          ..._ayahResults.map(
-                            (ayah) =>
-                                _buildAyahResultCard(context, ayah, isDark),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-
-                        // Notes Group
-                        if (_noteResults.isNotEmpty) ...[
-                          _buildGroupHeader(
-                            title: l10n.noteResults,
-                            count: _noteResults.length,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 8),
-                          ..._noteResults.map(
-                            (note) =>
-                                _buildNoteResultCard(context, note, isDark),
-                          ),
-                        ],
-                      ],
-                    ),
+                  : _buildResultsList(context, isDark, providers),
             ),
           ],
         ),
@@ -207,15 +295,76 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  /// يبني قائمة نتائج البحث مجمعة حسب القسم أو لقسم واحد محدد.
+  Widget _buildResultsList(
+    BuildContext context,
+    bool isDark,
+    List<SearchProvider> providers,
+  ) {
+    if (_selectedProviderId != null) {
+      // Single section results
+      final provider = providers.firstWhere(
+        (p) => p.id == _selectedProviderId,
+        orElse: () => providers.first,
+      );
+
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildGroupHeader(
+            title: provider.getSectionTitle(context),
+            count: _results.length,
+            icon: provider.icon,
+          ),
+          const SizedBox(height: 10),
+          ..._results.map(
+            (item) => _buildResultCard(context, item, isDark),
+          ),
+        ],
+      );
+    }
+
+    // Grouped results by provider
+    final Map<String, List<SearchResultItem>> grouped = {};
+    for (final item in _results) {
+      grouped.putIfAbsent(item.providerId, () => []).add(item);
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        for (final provider in providers)
+          if (grouped.containsKey(provider.id) &&
+              grouped[provider.id]!.isNotEmpty) ...[
+            _buildGroupHeader(
+              title: provider.getSectionTitle(context),
+              count: grouped[provider.id]!.length,
+              icon: provider.icon,
+            ),
+            const SizedBox(height: 8),
+            ...grouped[provider.id]!.map(
+              (item) => _buildResultCard(context, item, isDark),
+            ),
+            const SizedBox(height: 16),
+          ],
+      ],
+    );
+  }
+
+  /// يبني ترويسة مجموعة نتائج لقسم معين مع عداد النتائج.
   Widget _buildGroupHeader({
     required String title,
     required int count,
-    required bool isDark,
+    IconData? icon,
   }) {
     final primary = Theme.of(context).colorScheme.primary;
 
     return Row(
       children: [
+        if (icon != null) ...[
+          Icon(icon, size: 18, color: primary),
+          const SizedBox(width: 6),
+        ],
         Text(
           title,
           style: TextStyle(
@@ -246,97 +395,20 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildAyahResultCard(BuildContext context, Ayah ayah, bool isDark) {
-    final surah = QuranRepository.instance.getSurah(ayah.surahNumber);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      color: isDark ? AppColors.darkSurface : AppColors.comsilk,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          if (widget.returnToCaller) {
-            Navigator.pop(context, ayah);
-          } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => QuranScreen(
-                  initialPage: ayah.page,
-                  targetSurahNumber: ayah.surahNumber,
-                  targetAyahNumber: ayah.ayahNumber,
-                ),
-              ),
-            );
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'سورة ${surah.name} · الآية ${ArabicSearchNormalizer.toArabicDigits(ayah.ayahNumber)}',
-                    style: TextStyle(
-                      fontFamily: 'Amiri',
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.lightPrimaryDark,
-                    ),
-                  ),
-                  Text(
-                    'ص ${ArabicSearchNormalizer.toArabicDigits(ayah.page)} · ج ${ArabicSearchNormalizer.toArabicDigits(ayah.juz)}',
-                    style: TextStyle(
-                      fontFamily: 'Amiri',
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '﴿ ${ayah.text} ﴾',
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'AmiriQuran',
-                  fontSize: 16,
-                  height: 1.8,
-                  color: isDark
-                      ? AppColors.nightQuranText
-                      : AppColors.dayQuranText,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoteResultCard(
+  /// يبني بطاقة عرض لنتيجة بحث مفردة قابلة للنقر.
+  Widget _buildResultCard(
     BuildContext context,
-    NoteItem note,
+    SearchResultItem item,
     bool isDark,
   ) {
+    final isQuranAyah = item.providerId == 'quran';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       color: isDark ? AppColors.darkSurface : AppColors.comsilk,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const NotesScreen()),
-          );
-        },
+        onTap: () => _handleItemTap(item),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
@@ -345,46 +417,54 @@ class _SearchScreenState extends State<SearchScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    note.isAyahNote
-                        ? 'تدبر سورة ${note.surahNumber != null ? QuranRepository.instance.getSurah(note.surahNumber!).name : ""} · آية ${note.ayahNumber != null ? ArabicSearchNormalizer.toArabicDigits(note.ayahNumber!) : ""}'
-                        : (note.title?.isNotEmpty == true
-                              ? note.title!
-                              : 'ملاحظة حرة'),
-                    style: TextStyle(
-                      fontFamily: 'Amiri',
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.lightPrimaryDark,
+                  Expanded(
+                    child: Text(
+                      item.title,
+                      style: TextStyle(
+                        fontFamily: 'Amiri',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.lightPrimaryDark,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Text(
-                    '${note.createdAt.year}/${note.createdAt.month}/${note.createdAt.day}',
-                    style: TextStyle(
-                      fontFamily: 'Amiri',
-                      fontSize: 12,
-                      color: isDark
-                          ? AppColors.nightSubtitle
-                          : AppColors.daySubtitle,
+                  if (item.badge != null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      item.badge!,
+                      style: TextStyle(
+                        fontFamily: 'Amiri',
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                note.content,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'Amiri',
-                  fontSize: 13,
-                  color: isDark
-                      ? AppColors.nightQuranText
-                      : AppColors.dayQuranText,
+              if (item.snippet.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  item.snippet,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: isQuranAyah ? 'AmiriQuran' : 'Amiri',
+                    fontSize: isQuranAyah ? 16 : 13,
+                    height: isQuranAyah ? 1.8 : 1.4,
+                    color: isDark
+                        ? (isQuranAyah
+                            ? AppColors.nightQuranText
+                            : AppColors.darkTextSecondary)
+                        : (isQuranAyah
+                            ? AppColors.dayQuranText
+                            : AppColors.lightTextSecondary),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

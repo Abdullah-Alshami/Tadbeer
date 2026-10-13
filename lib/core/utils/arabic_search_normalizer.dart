@@ -32,7 +32,8 @@ class ArabicSearchNormalizer {
     // 2. Remove Tatweel (Kashida)
     result = result.replaceAll(_tatweelRegex, '');
 
-    // 3. Normalize all Alef forms (أ, إ, آ, ٱ) to bare Alef (ا)
+    // 3. Normalize all Alef forms (أ, إ, آ, ٱ, and Uthmani isolated hamza before Alef ءا) to bare Alef (ا)
+    result = result.replaceAll('ءا', 'ا');
     result = result.replaceAll(RegExp(r'[أإآٱ]'), 'ا');
 
     // 4. Normalize Taa Marbuta (ة) to Haa (ه)
@@ -45,27 +46,50 @@ class ArabicSearchNormalizer {
     result = result.replaceAll('ؤ', 'و');
     result = result.replaceAll('ئ', 'ي');
 
-    // 7. Trim and collapse whitespace
+    // 7. Normalize canonical Quranic Uthmani / Modern orthography variations for search:
+    // Waw-Alif mappings in Uthmani (e.g. صلوة -> صلاة, زكوة -> زكاة, حيوة -> حياة)
+    result = result.replaceAll('صلوه', 'صلاه');
+    result = result.replaceAll('زكوه', 'زكاه');
+    result = result.replaceAll('حيوه', 'حياه');
+    result = result.replaceAll('ربوا', 'ربا');
+
+    // Canonical names and terms where Uthmani uses dagger alif and modern Arabic uses full alif:
+    result = result.replaceAll('ابراهيم', 'ابرهيم');
+    result = result.replaceAll('اسماعيل', 'اسمعيل');
+    result = result.replaceAll('اسحاق', 'اسحق');
+    result = result.replaceAll('هارون', 'هرون');
+    result = result.replaceAll('سليمان', 'سليمن');
+    result = result.replaceAll('السماوات', 'السموات');
+    result = result.replaceAll('سماوات', 'سموات');
+    result = result.replaceAll('العالمين', 'العلمين');
+    result = result.replaceAll('عالمين', 'علمين');
+
+    // 8. Trim and collapse whitespace
     result = result.replaceAll(RegExp(r'\s+'), ' ').trim().toLowerCase();
 
     return result;
+  }
+
+  /// Converts any ASCII digits in a string into Arabic-Indic digits (e.g. "5–7" -> "٥–٧").
+  static String convertDigits(String input) {
+    const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    final buffer = StringBuffer();
+    for (int i = 0; i < input.length; i++) {
+      final code = input.codeUnitAt(i);
+      if (code >= 48 && code <= 57) {
+        buffer.write(arabicDigits[code - 48]);
+      } else {
+        buffer.write(input[i]);
+      }
+    }
+    return buffer.toString();
   }
 
   /// Converts an integer to Arabic-Indic digits with optional minimum digits padding
   /// (e.g. 5 with minDigits: 2 -> "٠٥").
   static String formatDigits(int number, {int minDigits = 1}) {
     final s = number.toString().padLeft(minDigits, '0');
-    const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-    final buffer = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      final code = s.codeUnitAt(i);
-      if (code >= 48 && code <= 57) {
-        buffer.write(arabicDigits[code - 48]);
-      } else {
-        buffer.write(s[i]);
-      }
-    }
-    return buffer.toString();
+    return convertDigits(s);
   }
 
   /// Converts an integer to Arabic-Indic digits (e.g. 1 -> ١).

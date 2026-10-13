@@ -8,16 +8,22 @@ import '../../core/utils/note_pdf_exporter.dart';
 import '../../features/notes/note_model.dart';
 import '../../features/quran/data/quran_repository.dart';
 
+/// شاشة محرر الملاحظات والخواطر التدبرية بملء الشاشة.
+///
 /// Full-screen, comfortable Arabic note editor for long-form tadbeer reflections.
 class NoteEditorScreen extends StatefulWidget {
+  /// الملاحظة الحالية المراد تعديلها، أو فارغة عند إنشاء ملاحظة جديدة.
   final NoteItem? existingNote;
 
+  /// ينشئ شاشة محرر الملاحظات.
   const NoteEditorScreen({super.key, this.existingNote});
 
+  /// ينشئ حالة شاشة محرر الملاحظات.
   @override
   State<NoteEditorScreen> createState() => _NoteEditorScreenState();
 }
 
+/// الحالة الداخلية لشاشة محرر الملاحظات وإدارة الحفظ والتصدير.
 class _NoteEditorScreenState extends State<NoteEditorScreen> {
   late final TextEditingController _titleController;
   late final TextEditingController _contentController;
@@ -25,6 +31,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   int _wordCount = 0;
   bool _isSaving = false;
 
+  /// يهيئ متحكمات النصوص ويحسب عدد الكلمات والأحرف المبدئي.
   @override
   void initState() {
     super.initState();
@@ -41,6 +48,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     });
   }
 
+  /// يحدث عدّاد الكلمات والأحرف عند تغير النص المدخل.
   void _updateCounts(String text) {
     final trimmed = text.trim();
     final words = trimmed.isEmpty
@@ -52,6 +60,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     });
   }
 
+  /// يحرر موارد متحكمات النصوص عند إغلاق الشاشة.
   @override
   void dispose() {
     _titleController.dispose();
@@ -59,6 +68,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     super.dispose();
   }
 
+  /// يحفظ الملاحظة الجديدة أو المعدلة في التخزين المحلي.
   Future<void> _saveNote() async {
     final content = _contentController.text.trim();
     if (content.isEmpty) {
@@ -108,6 +118,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     }
   }
 
+  /// يصدر الملاحظة الحالية إلى ملف PDF ويفتح نافذة المشاركة.
   Future<void> _exportPdf() async {
     final note =
         widget.existingNote ??
@@ -130,6 +141,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     }
   }
 
+  /// يبني واجهة محرر الملاحظات مع حقول العنوان والمحتوى وشريط الإحصائيات.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;

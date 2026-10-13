@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../core/storage/user_data_store.dart';
 import '../features/home/home_screen.dart';
-import '../features/tadabbur/tadbeer_intro_screen.dart';
+import '../features/tadbeer/tadbeer_intro_screen.dart';
 import 'localization.dart';
 import 'theme.dart';
 
+/// مفتاح التنقل العام للتطبيق لفتح الشاشات عند النقر على الإشعارات أو المنبهات.
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 /// Root application widget for Tadbeer.
@@ -20,10 +21,12 @@ class TadbeerApp extends StatefulWidget {
   State<TadbeerApp> createState() => _TadbeerAppState();
 }
 
+/// حالة التطبيق الجذرية المسؤولة عن اللغة المفعّلة وشاشة البداية.
 class _TadbeerAppState extends State<TadbeerApp> {
   late AppLanguage _currentLanguage;
   late bool _initialHideIntro;
 
+  /// تهيئة لغة التطبيق وحالة إخفاء الشاشة الترحيبية من الإعدادات المحفوظة.
   @override
   void initState() {
     super.initState();
@@ -33,18 +36,20 @@ class _TadbeerAppState extends State<TadbeerApp> {
         UserDataStore.instance.settings.hideTadbeerIntroPermanently;
   }
 
+  /// تحديث لغة واجهة التطبيق عند تغييرها من قِبل المستخدم.
   void _onLanguageChanged(AppLanguage newLang) {
     setState(() {
       _currentLanguage = newLang;
     });
   }
 
+  /// بناء شجرة التطبيق مع ربط السمة واللغة المحددة.
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: UserDataStore.instance,
+      listenable: UserDataStore.instance.settingsNotifier,
       builder: (context, _) {
-        final settings = UserDataStore.instance.settings;
+        final settings = UserDataStore.instance.settingsNotifier.value;
 
         return AppLocalizationScope(
           currentLanguage: _currentLanguage,

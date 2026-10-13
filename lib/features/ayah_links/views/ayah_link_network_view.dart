@@ -10,6 +10,8 @@ import '../ayah_link_repository.dart';
 import '../../quran/data/quran_repository.dart';
 import '../../quran/screens/quran_screen.dart';
 
+/// واجهة عرض الشبكة التفاعلية لرابط الآيات مع عقدة المحور المركزية وعقد الآيات المحيطة.
+///
 /// Flagship interactive Network Canvas View for an Ayah Link.
 ///
 /// Features:
@@ -17,23 +19,29 @@ import '../../quran/screens/quran_screen.dart';
 /// - Deterministic radial auto-layout preventing node collisions.
 /// - Drag-and-drop manual positioning with state persistence.
 /// - Pan & pinch-to-zoom navigation via [InteractiveViewer].
-/// - Floating directional pad (↑, ↓, ←, →, ⌾ center, +, -).
+/// - Centering action and smooth animated camera navigation.
 /// - Smooth animated camera focus when tapping an ayah.
 /// - Detailed verse inspector bottom sheet.
 class AyahLinkNetworkView extends StatefulWidget {
+  /// بيانات رابط الآيات المعروض في الشبكة.
   final AyahLinkItem link;
+
+  /// دالة الاستدعاء عند الضغط على زر إضافة آية.
   final VoidCallback onAddVerse;
 
+  /// ينشئ واجهة عرض الشبكة التفاعلية لرابط الآيات.
   const AyahLinkNetworkView({
     super.key,
     required this.link,
     required this.onAddVerse,
   });
 
+  /// ينشئ حالة واجهة الشبكة التفاعلية لرابط الآيات.
   @override
   State<AyahLinkNetworkView> createState() => AyahLinkNetworkViewState();
 }
 
+/// حالة واجهة الشبكة التفاعلية التي تدير مواضع العقد وحركة الكاميرا والتفاعل.
 class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     with SingleTickerProviderStateMixin {
   static const double _canvasSize = 3000.0;
@@ -48,6 +56,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
 
   final AyahLinkRepository _repo = AyahLinkRepository();
 
+  /// يهيئ متحكمات التحويل والحركة ويستعيد مواضع العقد والمنظور.
   @override
   void initState() {
     super.initState();
@@ -64,6 +73,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     });
   }
 
+  /// يزامن مواضع العقد عند تغير قائمة الآيات أو إعدادات الترتيب في الرابط.
   @override
   void didUpdateWidget(covariant AyahLinkNetworkView oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -74,6 +84,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     }
   }
 
+  /// يحرر موارد متحكمات التحويل والحركة عند التخلص من الواجهة.
   @override
   void dispose() {
     _transformController.dispose();
@@ -81,6 +92,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     super.dispose();
   }
 
+  /// يزامن مواضع العقد المحلية مع المواضع المحفوظة أو يعيد حساب الترتيب التلقائي.
   void _syncPositionsFromLink() {
     final existing = widget.link.positions;
     final verses = widget.link.verses;
@@ -101,6 +113,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     }
   }
 
+  /// يحسب المواضع الدائرية التلقائية لعقد الآيات حول العقدة المركزية لمنع التداخل.
   void _computeAutoLayoutPositions(List<AyahLinkVerse> verses) {
     _positions.clear();
     final count = verses.length;
@@ -165,6 +178,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     }
   }
 
+  /// يعين مواضع افتراضية لأي آيات مضافة حديثاً لا تملك موضعاً محفوظاً بعد.
   void _assignMissingVersePositions(List<AyahLinkVerse> verses) {
     for (int i = 0; i < verses.length; i++) {
       final key = verses[i].ayahKey;
@@ -179,6 +193,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     }
   }
 
+  /// يهيئ منظور الكاميرا باستعادة الإزاحة والتكبير المحفوظين أو توسيط اللوحة.
   void _initOrRestoreViewport() {
     if (!mounted) return;
     final size = MediaQuery.of(context).size;
@@ -196,6 +211,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     }
   }
 
+  /// يضبط مصفوفة التحويل لتوسيط لوحة الشبكة داخل مساحة العرض المتاحة.
   void _centerViewport(Size viewportSize, {bool animate = true}) {
     const scale = 0.95;
     final targetX = (viewportSize.width / 2) - (_centerCoord * scale);
@@ -212,6 +228,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     }
   }
 
+  /// يحرك منظور الكاميرا بسلاسة نحو مصفوفة التحويل المستهدفة.
   void _animateToMatrix(Matrix4 target) {
     _matrixAnimation?.removeListener(_onMatrixAnim);
     _animController.reset();
@@ -228,12 +245,33 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     _animController.forward();
   }
 
+  /// يحدّث قيمة متحكم التحويل أثناء تقدم حركة الكاميرا.
   void _onMatrixAnim() {
     if (_matrixAnimation != null) {
       _transformController.value = _matrixAnimation!.value;
     }
   }
 
+  /// يعيد توسيط منظور الشبكة نحو العقدة المركزية بحركة سلسة ويحفظ الحالة.
+  ///
+  /// Smoothly animates the canvas viewport back to its initial center.
+  void centerView() {
+    if (!mounted) return;
+    final size = MediaQuery.of(context).size;
+    _centerViewport(size, animate: true);
+    const scale = 0.95;
+    final targetX = (size.width / 2) - (_centerCoord * scale);
+    final targetY = (size.height / 2) - (_centerCoord * scale);
+    _repo.updateViewState(
+      widget.link.id,
+      panX: targetX,
+      panY: targetY,
+      zoomScale: scale,
+    );
+  }
+
+  /// يعيد ترتيب عقد الآيات تلقائياً حول المركز ويحفظ المواضع الجديدة.
+  ///
   /// Public action called to trigger automatic re-layout
   Future<void> autoLayout() async {
     setState(() {
@@ -258,6 +296,8 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     }
   }
 
+  /// يوجه الكاميرا نحو عقدة الآية المختارة ثم يفتح اللوحة التفصيلية للآية.
+  ///
   /// Smoothly zooms and centers on a selected Ayah node, then opens inspector
   void _focusAyahNode(AyahLinkVerse verse) {
     final pos = _positions[verse.ayahKey];
@@ -286,6 +326,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     });
   }
 
+  /// يعرض نافذة سفلية تتضمن النص الكامل للآية وملاحظة التدبر وخيارات الإجراءات.
   void _showVerseInspectorSheet(AyahLinkVerse verse) {
     final surah = QuranRepository.instance.getSurah(verse.surahNumber);
     final ayah = QuranRepository.instance.getAyah(
@@ -508,6 +549,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     );
   }
 
+  /// يفتح نافذة حوار لتعديل ملاحظة التدبر الخاصة بآية داخل الرابط.
   Future<void> _showEditNoteDialog(AyahLinkVerse verse) async {
     final controller = TextEditingController(text: verse.note ?? '');
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -557,6 +599,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     }
   }
 
+  /// يعرض نافذة تأكيد لإزالة آية محددة من رابط الآيات.
   Future<void> _confirmRemoveVerse(AyahLinkVerse verse) async {
     final surah = QuranRepository.instance.getSurah(verse.surahNumber);
     final confirmed = await showDialog<bool>(
@@ -592,26 +635,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     }
   }
 
-  // Directional Pan & Zoom Actions
-  void _panBy(double dx, double dy) {
-    final current = _transformController.value;
-    final updated = Matrix4.copy(current)..translate2D(dx, dy);
-    _animateToMatrix(updated);
-  }
-
-  void _zoomBy(double factor) {
-    final current = _transformController.value;
-    final size = MediaQuery.of(context).size;
-    final focalPoint = Offset(size.width / 2, size.height / 2);
-
-    final updated = Matrix4.copy(current)
-      ..translate2D(focalPoint.dx, focalPoint.dy)
-      ..scale2D(factor)
-      ..translate2D(-focalPoint.dx, -focalPoint.dy);
-
-    _animateToMatrix(updated);
-  }
-
+  /// يحفظ مواضع العقد المعدلة يدوياً بعد انتهاء عملية السحب.
   void _persistManualPositions() {
     final map = <String, LinkNodePosition>{};
     for (final entry in _positions.entries) {
@@ -620,6 +644,7 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
     _repo.updatePositions(widget.link.id, map, true);
   }
 
+  /// يبني لوحة الشبكة التفاعلية وعقد الآيات وواجهة الحالة الفارغة.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -755,39 +780,27 @@ class AyahLinkNetworkViewState extends State<AyahLinkNetworkView>
               ),
             ),
           ),
-
-        // Floating D-pad Navigation Controls (bottom-left / start)
-        Positioned(
-          left: 16,
-          bottom: 24,
-          child: _FloatingNavigationPad(
-            isDark: isDark,
-            onPanUp: () => _panBy(0, 120),
-            onPanDown: () => _panBy(0, -120),
-            onPanLeft: () => _panBy(120, 0),
-            onPanRight: () => _panBy(-120, 0),
-            onCenter: () => _centerViewport(MediaQuery.of(context).size),
-            onZoomIn: () => _zoomBy(1.2),
-            onZoomOut: () => _zoomBy(0.8),
-          ),
-        ),
       ],
     );
   }
 }
 
+/// رسام مخصص لرسم خطوط الاتصال المنحنية بين العقدة المركزية وعقد الآيات.
+///
 /// Custom painter for connecting center node to all member verse nodes.
 class _NetworkConnectionsPainter extends CustomPainter {
   final Offset center;
   final Map<String, Offset> positions;
   final bool isDark;
 
+  /// ينشئ رسام خطوط الشبكة.
   const _NetworkConnectionsPainter({
     required this.center,
     required this.positions,
     required this.isDark,
   });
 
+  /// يرسم المسارات المنحنية ونقاط الارتباط على لوحة الشبكة.
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
@@ -819,12 +832,15 @@ class _NetworkConnectionsPainter extends CustomPainter {
     }
   }
 
+  /// يحدد ما إذا كان يجب إعادة رسم الخطوط عند تغير المواضع أو السمة.
   @override
   bool shouldRepaint(covariant _NetworkConnectionsPainter oldDelegate) {
     return oldDelegate.positions != positions || oldDelegate.isDark != isDark;
   }
 }
 
+/// العقدة المركزية التي تمثل عنوان ومحور رابط الآيات.
+///
 /// Central Node representing the overall Ayah Link theme/title.
 class _CenterThemeNode extends StatelessWidget {
   final String title;
@@ -832,6 +848,7 @@ class _CenterThemeNode extends StatelessWidget {
   final int versesCount;
   final bool isDark;
 
+  /// ينشئ العقدة المركزية لرابط الآيات.
   const _CenterThemeNode({
     required this.title,
     this.description,
@@ -839,6 +856,7 @@ class _CenterThemeNode extends StatelessWidget {
     required this.isDark,
   });
 
+  /// يبني بطاقة العقدة المركزية مع عنوان الرابط وعدد الآيات المرتبطة.
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -913,6 +931,8 @@ class _CenterThemeNode extends StatelessWidget {
   }
 }
 
+/// عقدة آية تفاعلية قابلة للسحب والضغط داخل لوحة الشبكة.
+///
 /// Interactive Verse Node on the Canvas with draggable gestures.
 class _VerseCanvasNode extends StatelessWidget {
   final AyahLinkVerse verse;
@@ -921,6 +941,7 @@ class _VerseCanvasNode extends StatelessWidget {
   final ValueChanged<Offset> onPanUpdate;
   final VoidCallback onPanEnd;
 
+  /// ينشئ عقدة آية تفاعلية على لوحة الشبكة.
   const _VerseCanvasNode({
     required this.verse,
     required this.isDark,
@@ -929,6 +950,7 @@ class _VerseCanvasNode extends StatelessWidget {
     required this.onPanEnd,
   });
 
+  /// يبني بطاقة عقدة الآية مع مقتطف النص وملاحظة التدبر.
   @override
   Widget build(BuildContext context) {
     final surah = QuranRepository.instance.getSurah(verse.surahNumber);
@@ -1058,142 +1080,14 @@ class _VerseCanvasNode extends StatelessWidget {
   }
 }
 
-/// Floating Navigation D-Pad for Pan and Zoom.
-class _FloatingNavigationPad extends StatelessWidget {
-  final bool isDark;
-  final VoidCallback onPanUp;
-  final VoidCallback onPanDown;
-  final VoidCallback onPanLeft;
-  final VoidCallback onPanRight;
-  final VoidCallback onCenter;
-  final VoidCallback onZoomIn;
-  final VoidCallback onZoomOut;
-
-  const _FloatingNavigationPad({
-    required this.isDark,
-    required this.onPanUp,
-    required this.onPanDown,
-    required this.onPanLeft,
-    required this.onPanRight,
-    required this.onCenter,
-    required this.onZoomIn,
-    required this.onZoomOut,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bgColor = isDark
-        ? AppColors.darkSurface.withValues(alpha: 0.92)
-        : AppColors.comsilkLight.withValues(alpha: 0.92);
-    final borderColor = isDark
-        ? AppColors.darkSurfaceVariant
-        : AppColors.lightBorder;
-
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Zoom In / Out row
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _PadButton(icon: Icons.add, tooltip: 'تكبير', onTap: onZoomIn),
-              const SizedBox(width: 4),
-              _PadButton(
-                icon: Icons.remove,
-                tooltip: 'تصغير',
-                onTap: onZoomOut,
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Divider(height: 1),
-          const SizedBox(height: 6),
-
-          // D-Pad Arrows with Center
-          _PadButton(
-            icon: Icons.keyboard_arrow_up,
-            tooltip: 'أعلى',
-            onTap: onPanUp,
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _PadButton(
-                icon: Icons.keyboard_arrow_right,
-                tooltip: 'يمين',
-                onTap: onPanRight,
-              ),
-              _PadButton(
-                icon: Icons.filter_center_focus,
-                tooltip: 'إعادة التمركز',
-                iconColor: AppColors.olive,
-                onTap: onCenter,
-              ),
-              _PadButton(
-                icon: Icons.keyboard_arrow_left,
-                tooltip: 'يسار',
-                onTap: onPanLeft,
-              ),
-            ],
-          ),
-          _PadButton(
-            icon: Icons.keyboard_arrow_down,
-            tooltip: 'أسفل',
-            onTap: onPanDown,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PadButton extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-  final Color? iconColor;
-
-  const _PadButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    this.iconColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 32,
-      height: 32,
-      child: IconButton(
-        icon: Icon(icon, size: 18, color: iconColor),
-        padding: EdgeInsets.zero,
-        tooltip: tooltip,
-        onPressed: onTap,
-      ),
-    );
-  }
-}
-
+/// دوال مساعدة لتحريك وتكبير مصفوفة التحويل ثنائية الأبعاد.
 extension on Matrix4 {
+  /// يطبق إزاحة ثنائية الأبعاد على مصفوفة التحويل.
   void translate2D(double x, double y) {
     translateByDouble(x, y, 0.0, 1.0);
   }
 
+  /// يطبق تكبيراً متماثلاً ثنائي الأبعاد على مصفوفة التحويل.
   void scale2D(double s) {
     scaleByDouble(s, s, 1.0, 1.0);
   }

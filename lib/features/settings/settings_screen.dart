@@ -3,13 +3,19 @@ import 'package:flutter/material.dart';
 import '../../app/localization.dart';
 import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
+import '../../core/utils/arabic_search_normalizer.dart';
 import '../backup/backup_screen.dart';
 import '../reminders/reminders_screen.dart';
+import 'user_settings_model.dart';
 
+/// شاشة الإعدادات لإدارة المظهر ونوع وحجم خط المصحف واللغة وإعادة تعيين البيانات.
+///
 /// Settings screen for managing appearance, Quran font scale, language, and data reset.
 class SettingsScreen extends StatelessWidget {
+  /// ينشئ شاشة الإعدادات.
   const SettingsScreen({super.key});
 
+  /// يبني واجهة شاشة الإعدادات مقسمة إلى بطاقات منظمة.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -116,53 +122,226 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-
-                // 2. القراءة ومصحف المدينة
-                _buildSectionHeader(context, l10n.readingSettings),
+                // 2. الخط والقراءة (Typography & Reading)
+                _buildSectionHeader(
+                  context,
+                  context.currentLanguage == AppLanguage.arabic
+                      ? 'الخط والقراءة'
+                      : 'Typography & Reading',
+                ),
                 _buildCard(
                   context: context,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary
-                                .withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.font_download_outlined,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              context.currentLanguage == AppLanguage.arabic
+                                  ? 'نوع خط المصحف'
+                                  : 'Quran Font Family',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        for (final fontOpt in QuranFontFamilyOption.values) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () {
+                                UserDataStore.instance.setQuranFontFamily(
+                                  fontOpt,
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: settings.quranFontFamily == fontOpt
+                                      ? Theme.of(context)
+                                            .colorScheme
+                                            .primary
+                                            .withValues(
+                                              alpha: isDark ? 0.22 : 0.10,
+                                            )
+                                      : (isDark
+                                            ? AppColors.darkSurface
+                                            : AppColors.lightBackground),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: settings.quranFontFamily == fontOpt
+                                        ? Theme.of(context).colorScheme.primary
+                                        : (isDark
+                                              ? AppColors.darkBorder
+                                              : AppColors.lightBorder),
+                                    width: settings.quranFontFamily == fontOpt
+                                        ? 1.4
+                                        : 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      settings.quranFontFamily == fontOpt
+                                          ? Icons.radio_button_checked_rounded
+                                          : Icons.radio_button_off_rounded,
+                                      size: 20,
+                                      color: settings.quranFontFamily == fontOpt
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : (isDark
+                                                ? AppColors.nightSubtitle
+                                                : AppColors.daySubtitle),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            fontOpt.labelArabic,
+                                            style: TextStyle(
+                                              fontWeight:
+                                                  settings.quranFontFamily ==
+                                                      fontOpt
+                                                  ? FontWeight.bold
+                                                  : FontWeight.w600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            fontOpt.subtitleArabic,
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              color: isDark
+                                                  ? AppColors.nightSubtitle
+                                                  : AppColors.daySubtitle,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
-                          child: Icon(
-                            Icons.menu_book_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 22,
+                        ],
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(height: 1),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.format_size_rounded,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  context.currentLanguage == AppLanguage.arabic
+                                      ? 'حجم خط المصحف'
+                                      : 'Quran Font Size',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              '${ArabicSearchNormalizer.toArabicDigits(settings.quranFontSize.round())} نقطة',
+                              style: TextStyle(
+                                fontFamily: 'Amiri',
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Slider(
+                          value: settings.quranFontSize,
+                          min: UserSettings.minQuranFontSize,
+                          max: UserSettings.maxQuranFontSize,
+                          divisions: 16,
+                          label: '${settings.quranFontSize.round()}',
+                          onChanged: (newSize) {
+                            UserDataStore.instance.setQuranFontSize(newSize);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.darkSurfaceVariant
+                                : AppColors.mushafBackground,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            'ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ\u00A0\u00A0ۛ فِيهِ\u00A0\u00A0ۛ هُدًى لِّلْمُتَّقِينَ ﴿٢﴾ أُو۟لَٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ\u00A0\u00A0ۖ وَأُو۟لَٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ ﴿٥﴾',
+                            textAlign: TextAlign.center,
+                            textDirection: TextDirection.rtl,
+                            style: TextStyle(
+                              fontFamily: settings.quranFontFamilyName,
+                              fontSize: settings.quranFontSize,
+                              height: 1.85,
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.mushafQuranText,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'مصحف المدينة النبوية',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: TextButton.icon(
+                                  onPressed:
+                                      settings.quranFontSize ==
+                                          UserSettings.defaultQuranFontSize
+                                      ? null
+                                      : () => UserDataStore.instance.setQuranFontSize(
+                                          UserSettings.defaultQuranFontSize,
+                                        ),
+                                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                                  label: const Text('إعادة للوضع الافتراضي (٢٠)'),
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'تخطيط مجمع الملك فهد (١٤٢١هـ) — ٦٠٤ صفحات ثابتة',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isDark
-                                      ? AppColors.nightSubtitle
-                                      : AppColors.oliveDark,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -229,7 +408,7 @@ class SettingsScreen extends StatelessWidget {
                       const Divider(height: 1),
                       ListTile(
                         leading: Icon(
-                          Icons.alarm_outlined,
+                          Icons.alarm_rounded,
                           color: Theme.of(context).colorScheme.primary,
                         ),
                         title: Text(
@@ -245,7 +424,7 @@ class SettingsScreen extends StatelessWidget {
                                 : AppColors.daySubtitle,
                           ),
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                        trailing: const Icon(Icons.chevron_left_rounded, size: 20),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -271,7 +450,7 @@ class SettingsScreen extends StatelessWidget {
                     children: [
                       ListTile(
                         leading: Icon(
-                          Icons.security_outlined,
+                          Icons.security_rounded,
                           color: Theme.of(context).colorScheme.primary,
                         ),
                         title: Text(
@@ -287,7 +466,7 @@ class SettingsScreen extends StatelessWidget {
                                 : AppColors.daySubtitle,
                           ),
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                        trailing: const Icon(Icons.chevron_left_rounded, size: 20),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -298,7 +477,7 @@ class SettingsScreen extends StatelessWidget {
                       const Divider(height: 1),
                       ListTile(
                         leading: const Icon(
-                          Icons.delete_sweep_outlined,
+                          Icons.delete_forever_rounded,
                           color: Colors.redAccent,
                         ),
                         title: const Text(
@@ -382,7 +561,36 @@ class SettingsScreen extends StatelessWidget {
                           l10n.aboutContent,
                           style: TextStyle(
                             fontSize: 13,
-                            height: 1.6,
+                            height: 1.7,
+                            color: isDark
+                                ? AppColors.nightSubtitle
+                                : AppColors.daySubtitle,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(height: 1),
+                        const SizedBox(height: 14),
+                        Text(
+                          'المصادر والتوثيق المعتمد:',
+                          style: TextStyle(
+                            fontFamily: 'Amiri',
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.lightPrimaryDark,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '• نص القرآن الكريم: مشروع تنزيل (Tanzil Project - https://tanzil.net) بالنص العثماني المعتمد برخصة المشاع الإبداعي (CC BY 3.0 — يُمنع التعديل).\n'
+                          '• الخطوط القرآنية المفتوحة المصدر: خط شهرزاد الجديد (Scheherazade New)، خط نوتو نسخ (Noto Naskh Arabic)، خط هرمتان (Harmattan)، خط لطيف (Lateef)، وخط أميري القرآني (AmiriQuran & Amiri) برخصة الخطوط المفتوحة SIL Open Font License 1.1.\n'
+                          '• معاني كلمات القرآن: الموسوعة القرآنية (Quranpedia.net — نسخة البيانات 2026-10-10) وأمهات المعاجم اللغوية التراثية والمعاصرة (لسان العرب لابن منظور، مقاييس اللغة لابن فارس، التبيان لابن الهائم، تذكرة الأريب لابن الجوزي، مفردات الراغب الأصفهاني، والمعجم الوسيط).\n'
+                          '• ترخيص التطبيق: مشروع مفتوح المصدر مرخص تحت رخصة MIT License.\n'
+                          '• الخصوصية والأمان المحلي: التطبيق يعمل محلياً بالكامل (100% Offline) دون أي اتصال خارجي أو خوادم أو تتبع أو إعلانات.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1.7,
                             color: isDark
                                 ? AppColors.nightSubtitle
                                 : AppColors.daySubtitle,
@@ -390,16 +598,22 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 14),
                         const Divider(height: 1),
-                        const SizedBox(height: 10),
-                        Text(
-                          'المصادر والتراخيص المفتوحة:\n• النص القرآني المعتمد: Tanzil Project (CC-BY 3.0)\n• خط المصحف الشريف: Amiri Quran (SIL Open Font License)\n• خط العناوين والواجهة: Amiri Font (SIL Open Font License)\n• تشفير النسخ الاحتياطية: AES-256 محلي بالكامل',
-                          style: TextStyle(
-                            fontSize: 11,
-                            height: 1.6,
-                            color: isDark
-                                ? AppColors.nightSubtitle
-                                : AppColors.daySubtitle,
-                          ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            showLicensePage(
+                              context: context,
+                              applicationName: l10n.appName,
+                              applicationVersion: '1.0.0',
+                              applicationLegalese:
+                                  'Copyright © 2026 Tadbeer Project Contributors (MIT License)\n'
+                                  'Quran Text: Tanzil.net (CC BY 3.0)\n'
+                                  'Word Meanings Dataset: Quranpedia.net (Version 2026-10-10)\n'
+                                  'Fonts: SIL Open Font License 1.1',
+                            );
+                          },
+                          icon: const Icon(Icons.policy_outlined, size: 18),
+                          label: const Text('تراخيص البرمجيات والمصادر المفتوحة'),
                         ),
                       ],
                     ),
@@ -413,26 +627,38 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  /// يعرض نافذة تأكيد لإعادة تعيين جميع بيانات المستخدم إلى الوضع الافتراضي.
   Future<void> _confirmResetData(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('إعادة تعيين البيانات'),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
+            SizedBox(width: 8),
+            Text('إعادة تعيين البيانات'),
+          ],
+        ),
         content: const Text(
           'هل أنت متأكد من رغبتك في حذف جميع الملاحظات والمحفوظات والتمييزات واستعادة الإعدادات الأصلية للتطبيق؟\n\nلا يمكن التراجع عن هذا الإجراء إلا إذا كانت لديك نسخة احتياطية سابقة.',
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text('إلغاء'),
+            icon: const Icon(Icons.close_rounded, size: 16),
+            label: const Text('إلغاء'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text('تأكيد إعادة التعيين'),
+            icon: const Icon(Icons.delete_forever_rounded, size: 16),
+            label: const Text('تأكيد إعادة التعيين'),
           ),
         ],
       ),
@@ -451,6 +677,7 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
+  /// يبني عنوان قسم فرعي داخل شاشة الإعدادات.
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, right: 4, left: 4),
@@ -465,6 +692,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  /// يبني حاوية بطاقة موحدة المظهر لتجميع عناصر الإعدادات.
   Widget _buildCard({required Widget child, required BuildContext context}) {
     return Material(
       color: AppColors.surface(context),

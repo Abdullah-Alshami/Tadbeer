@@ -46,11 +46,10 @@ class AppColors {
   static const Color olive = lightPrimary; // #29483A
   static const Color oliveDark = lightPrimaryDark; // #1C3329
   static const Color oliveSoft = darkPrimary; // #3D6652
-  static const Color oliveVeryLight = Color(0x1A29483A);
+  static const Color oliveLight = darkPrimary; // #3D6652
 
   static const Color comsilkLight = lightBackground; // #F6F3EA
   static const Color comsilk = lightSurface; // #EDE8DA
-  static const Color lightSurfaceVariant = lightSurface; // #EDE8DA
 
   static const Color darkSurfaceVariant = darkBorder; // #384139
 
@@ -58,9 +57,6 @@ class AppColors {
   static const Color nightQuranText = darkTextPrimary; // #E7E2D7
   static const Color daySubtitle = lightTextSecondary; // #6F6B61
   static const Color nightSubtitle = darkTextSecondary; // #AAA69C
-
-  static const Color selectionLight = lightSelectedAyah; // #A8B89F
-  static const Color selectionDark = darkSelectedAyah; // #536B59
 
   // ---------------------------------------------------------------------------
   // AYAH HIGHLIGHT PALETTE
@@ -73,56 +69,41 @@ class AppColors {
     Color(0x55A67C68), // Earthy Rose highlight
   ];
 
-  static const List<String> highlightColorNames = [
-    'غابي عميق',
-    'ذهبي معتّق',
-    'مريمي هادئ',
-    'ترابي دافئ',
-  ];
-
   // ---------------------------------------------------------------------------
   // DYNAMIC CONTEXT HELPERS
   // ---------------------------------------------------------------------------
+
+  /// إرجاع لون خلفية الشاشة المناسب للوضع الفاتح أو الداكن.
   static Color background(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
       ? darkBackground
       : lightBackground;
 
+  /// إرجاع لون البطاقات والأسطح المناسب للوضع الفاتح أو الداكن.
   static Color surface(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
       ? darkSurface
       : lightSurface;
 
+  /// إرجاع اللون الأساسي للتطبيق حسب السمة الحالية.
   static Color primary(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
       ? darkPrimary
       : lightPrimary;
 
-  static Color primaryDark(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
-      ? darkPrimaryDark
-      : lightPrimaryDark;
-
-  static Color accentGold(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
-      ? darkAccentGold
-      : lightAccentGold;
-
+  /// إرجاع لون النص الأساسي حسب السمة الحالية.
   static Color textPrimary(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
       ? darkTextPrimary
       : lightTextPrimary;
 
-  static Color textSecondary(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
-      ? darkTextSecondary
-      : lightTextSecondary;
-
+  /// إرجاع لون الإطارات والفواصل حسب السمة الحالية.
   static Color border(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
       ? darkBorder
       : lightBorder;
 
+  /// إرجاع لون تحديد الآية المختارة حسب السمة الحالية.
   static Color selectedAyah(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
       ? darkSelectedAyah
@@ -145,6 +126,7 @@ class AppTheme {
     'sans-serif',
   ];
 
+  /// إعدادات السمة الفاتحة (النهارية) للتطبيق.
   static ThemeData get lightTheme {
     final base = ThemeData.light(useMaterial3: true);
     return base.copyWith(
@@ -272,6 +254,7 @@ class AppTheme {
     );
   }
 
+  /// إعدادات السمة الداكنة (الليلية) للتطبيق.
   static ThemeData get darkTheme {
     final base = ThemeData.dark(useMaterial3: true);
     return base.copyWith(
@@ -399,6 +382,7 @@ class AppTheme {
     );
   }
 
+  /// بناء أنماط النصوص الموحدة مع خطوط احتياطية متوافقة مع العربية واللاتينية.
   static TextTheme _buildTextTheme(
     TextTheme base,
     Color textColor,

@@ -10,31 +10,22 @@ import '../../features/bookmarks/bookmark_model.dart';
 import '../../features/highlights/highlight_model.dart';
 import '../../features/notes/note_model.dart';
 import '../../features/quran/data/quran_models.dart';
-import '../../features/tadabbur/tadbeer_model.dart';
-import '../../features/quran/data/reading_position_model.dart';
+import '../../features/tadbeer/tadbeer_model.dart';
 import '../../features/reminders/reminder_model.dart';
 
 import 'package:sqflite/sqflite.dart';
 
 import 'user_database.dart';
+import '../services/local_reminder_service.dart';
 import '../../features/settings/user_settings_model.dart';
 
-/// Central local storage coordinator for user-generated data in Tadbeer.
+/// المنسق المركزي لإدارة وتخزين بيانات المستخدم محلياً في تطبيق تدبّر.
 ///
-/// EDUCATIONAL NOTE:
-/// User data (notes, bookmarks, highlights, reading position, reminders, settings)
-/// is intentionally kept separate from the static Quran dataset.
-///
-/// Why JSON with atomic file replacement?
-/// 1. Zero native C/FFI compilation issues across Linux, Android, iOS, Windows, and macOS.
-/// 2. Deterministic serialization: the disk snapshot maps 1:1 to the encrypted `.quranbackup` container.
-/// 3. Atomic file writes (writing to `.tmp` then renaming) ensure the database file is never corrupted
-///    even if the OS terminates the app or power is cut mid-write.
-///
-/// Performance Optimization:
-/// In-memory hash maps (`_bookmarkLookup` and `_highlightLookup`) are maintained alongside
-/// the collections. When rendering a 15-line Quran page with 10-30 ayahs, lookups are O(1)
-/// without scanning entire lists on every frame.
+/// ملاحظة معمارية:
+/// - نعتمد مبدأ Offline-First الكامل: لا ترسل أي بيانات لخادم خارجي إطلاقاً.
+/// - نستخدم خرائط بحث في الذاكرة (In-memory HashMaps مثل `_bookmarkLookup` و `_highlightLookup`)
+///   لتكون استعلامات حالة الآيات O(1) وفورية تماماً أثناء رسم صفحات المصحف دون استعلام SQLite في كل إطار.
+/// - يتم حفظ التغييرات ذرياً (Atomic writes) لضمان عدم تلف البيانات عند إغلاق التطبيق فجأة.
 class UserDataStore extends ChangeNotifier {
   static final UserDataStore instance = UserDataStore._internal();
   UserDataStore._internal();
@@ -44,6 +35,8 @@ class UserDataStore extends ChangeNotifier {
   static const String fileName = 'tadbeer_user_data.json';
 
   bool _isInitialized = false;
+
+  /// ما إذا كان مخزن بيانات المستخدم قد تمت تهيئته.
   bool get isInitialized => _isInitialized;
 
   ReadingPosition _readingPosition = ReadingPosition.defaultPosition();
@@ -54,15 +47,31 @@ class UserDataStore extends ChangeNotifier {
   final List<AyahLinkItem> _ayahLinks = [];
   final List<TadbeerItem> _tadbeerItems = [];
   UserSettings _settings = const UserSettings();
+  final ValueNotifier<UserSettings> settingsNotifier =
+      ValueNotifier<UserSettings>(const UserSettings());
 
+  /// آخر موضع قراءة محفوظ للمستخدم.
   ReadingPosition get readingPosition => _readingPosition;
+
+  /// قائمة جميع الملاحظات والخواطر غير القابلة للتعديل المباشر.
   List<NoteItem> get notes => List.unmodifiable(_notes);
+
+  /// قائمة جميع الإشارات المرجعية (الآيات المحفوظة).
   List<BookmarkItem> get bookmarks => List.unmodifiable(_bookmarks);
+
+  /// قائمة جميع تظليلات الآيات.
   List<HighlightItem> get highlights => List.unmodifiable(_highlights);
+
+  /// قائمة جميع التنبيهات والمنبهات المجدولة.
   List<ReminderItem> get reminders => List.unmodifiable(_reminders);
+
+  /// قائمة جميع روابط وخرائط الآيات.
   List<AyahLinkItem> get ayahLinks => List.unmodifiable(_ayahLinks);
+
+  /// قائمة جميع إجابات وقفات التدبر المحفوظة.
   List<TadbeerItem> get tadbeerItems => List.unmodifiable(_tadbeerItems);
-  List<TadbeerItem> get tadabburItems => tadbeerItems;
+
+  /// إعدادات المستخدم الحالية.
   UserSettings get settings => _settings;
 
   // In-memory lookups for O(1) page rendering performance
@@ -91,6 +100,7 @@ class UserDataStore extends ChangeNotifier {
       _tadbeerItems.clear();
       _tadbeerLookup.clear();
       _settings = const UserSettings();
+      settingsNotifier.value = _settings;
 
       final dbPath = testDbPath ?? inMemoryDatabasePath;
       await userDb.close();
@@ -154,7 +164,10 @@ class UserDataStore extends ChangeNotifier {
       }
 
       final dbSettings = await userDb.loadSettings();
-      if (dbSettings != null) _settings = dbSettings;
+      if (dbSettings != null) {
+        _settings = dbSettings;
+        settingsNotifier.value = dbSettings;
+      }
 
       // Migrate from JSON file if SQLite was fresh but JSON file already exists
       if (_notes.isEmpty &&
@@ -173,6 +186,7 @@ class UserDataStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// قراءة بيانات المستخدم من ملف JSON المحلي عند الترحيل أو عدم توفر SQLite.
   Future<void> _loadFromFile() async {
     if (_dataFile == null || !await _dataFile!.exists()) {
       return;
@@ -189,6 +203,7 @@ class UserDataStore extends ChangeNotifier {
     }
   }
 
+  /// تفريغ البيانات المستخرجة من خريطة JSON إلى القوائم والفهارس في الذاكرة.
   void _applyData(Map<String, dynamic> data) {
     if (data.containsKey('readingPosition')) {
       _readingPosition = ReadingPosition.fromJson(
@@ -260,10 +275,11 @@ class UserDataStore extends ChangeNotifier {
       _settings = UserSettings.fromJson(
         data['settings'] as Map<String, dynamic>,
       );
+      settingsNotifier.value = _settings;
     }
   }
 
-  /// Persists all in-memory collections into the SQLite user database.
+  /// Persists all in-memory collections into the SQLite user database within an atomic transaction.
   Future<void> _persistAllToSQLite() async {
     final userDb = UserDatabase.instance;
     if (!userDb.isOpen) return;
@@ -323,6 +339,7 @@ class UserDataStore extends ChangeNotifier {
   // READING POSITION
   // ==========================================
 
+  /// تعيين كائن موضع القراءة الحالي وحفظه في قاعدة البيانات والقرص.
   Future<void> setReadingPosition(ReadingPosition position) async {
     _readingPosition = position;
     notifyListeners();
@@ -333,6 +350,7 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
+  /// حفظ موضع القراءة الحالي باستخدام رقم الصفحة ورقم السورة ورقم الآية.
   Future<void> saveReadingPosition({
     required int page,
     required int surahNumber,
@@ -351,6 +369,7 @@ class UserDataStore extends ChangeNotifier {
   // NOTES
   // ==========================================
 
+  /// البحث عن جميع الملاحظات المرتبطة بآية محددة.
   List<NoteItem> findNotesForAyah(int surahNumber, int ayahNumber) {
     return _notes
         .where(
@@ -359,10 +378,12 @@ class UserDataStore extends ChangeNotifier {
         .toList();
   }
 
+  /// استرجاع الملاحظات المرتبطة بآية محددة (مرادف لدالة البحث).
   List<NoteItem> getNotesForAyah(int surahNumber, int ayahNumber) {
     return findNotesForAyah(surahNumber, ayahNumber);
   }
 
+  /// إضافة ملاحظة أو تحديثها في الذاكرة وقاعدة البيانات.
   Future<void> putNote(NoteItem note) async {
     final idx = _notes.indexWhere((n) => n.id == note.id);
     if (idx != -1) {
@@ -378,6 +399,7 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
+  /// إنشاء ملاحظة جديدة أو تحديث ملاحظة قائمة وحفظها.
   Future<NoteItem> saveNote({
     String? id,
     required NoteType type,
@@ -421,6 +443,7 @@ class UserDataStore extends ChangeNotifier {
     return newNote;
   }
 
+  /// إزالة ملاحظة من الذاكرة وقاعدة البيانات بواسطة معرفها.
   Future<void> removeNote(String id) async {
     _notes.removeWhere((n) => n.id == id);
     notifyListeners();
@@ -431,19 +454,23 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
+  /// حذف ملاحظة بواسطة معرفها.
   Future<void> deleteNote(String id) => removeNote(id);
 
   // ==========================================
   // BOOKMARKS
   // ==========================================
 
+  /// التحقق الفوري مما إذا كانت الآية محفوظة في الإشارات المرجعية.
   bool hasBookmark(int surahNumber, int ayahNumber) {
     return _bookmarkLookup.containsKey('$surahNumber:$ayahNumber');
   }
 
+  /// التحقق مما إذا كانت الآية محفوظة في الفواصل المرجعية.
   bool isBookmarked(int surahNumber, int ayahNumber) =>
       hasBookmark(surahNumber, ayahNumber);
 
+  /// حفظ إشارة مرجعية في الذاكرة وقاعدة البيانات.
   Future<void> putBookmark(BookmarkItem bookmark) async {
     final idx = _bookmarks.indexWhere((b) => b.id == bookmark.id);
     if (idx != -1) {
@@ -460,6 +487,7 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
+  /// تبديل حالة حفظ الآية (إضافة إشارة مرجعية أو إزالتها إن كانت موجودة).
   Future<bool> toggleBookmark(Ayah ayah) async {
     final currentlyBookmarked = hasBookmark(ayah.surahNumber, ayah.ayahNumber);
     if (currentlyBookmarked) {
@@ -484,6 +512,7 @@ class UserDataStore extends ChangeNotifier {
     }
   }
 
+  /// إزالة إشارة مرجعية بواسطة معرفها الفريد.
   Future<void> removeBookmark(String id) async {
     final idx = _bookmarks.indexWhere((b) => b.id == id);
     if (idx != -1) {
@@ -502,13 +531,16 @@ class UserDataStore extends ChangeNotifier {
   // HIGHLIGHTS
   // ==========================================
 
+  /// البحث الفوري عن تظليل الآية المحددة إن وُجد.
   HighlightItem? findHighlight(int surahNumber, int ayahNumber) {
     return _highlightLookup['$surahNumber:$ayahNumber'];
   }
 
+  /// استرجاع تظليل الآية المحددة.
   HighlightItem? getHighlight(int surahNumber, int ayahNumber) =>
       findHighlight(surahNumber, ayahNumber);
 
+  /// حفظ تظليل آية أو تحديث لونه في الذاكرة وقاعدة البيانات.
   Future<void> putHighlight(HighlightItem highlight) async {
     final key = highlight.ayahKey;
     final existing = _highlightLookup[key];
@@ -529,6 +561,7 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
+  /// تعيين لون التظليل لآية محددة وحفظه.
   Future<void> setHighlight(Ayah ayah, int colorIndex) async {
     final existing = findHighlight(ayah.surahNumber, ayah.ayahNumber);
     final item = HighlightItem(
@@ -543,6 +576,7 @@ class UserDataStore extends ChangeNotifier {
     await putHighlight(item);
   }
 
+  /// إزالة التظليل عن الآية المحددة.
   Future<void> removeHighlight(int surahNumber, int ayahNumber) async {
     final key = '$surahNumber:$ayahNumber';
     final existing = _highlightLookup.remove(key);
@@ -561,6 +595,7 @@ class UserDataStore extends ChangeNotifier {
   // REMINDERS
   // ==========================================
 
+  /// إضافة تنبيه جديد أو تحديث تنبيه موجود في الذاكرة وقاعدة البيانات.
   Future<void> putReminder(ReminderItem reminder) async {
     final idx = _reminders.indexWhere((r) => r.id == reminder.id);
     if (idx != -1) {
@@ -576,21 +611,7 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
-  Future<void> toggleReminderActive(String id) async {
-    final idx = _reminders.indexWhere((r) => r.id == id);
-    if (idx != -1) {
-      final reminder = _reminders[idx];
-      final updated = reminder.copyWith(isEnabled: !reminder.isEnabled);
-      _reminders[idx] = updated;
-      notifyListeners();
-      final userDb = UserDatabase.instance;
-      if (userDb.isOpen) {
-        await userDb.insertOrUpdateReminder(updated);
-      }
-      await saveToDisk();
-    }
-  }
-
+  /// حذف تنبيه من الذاكرة وقاعدة البيانات بواسطة معرفه.
   Future<void> removeReminder(String id) async {
     _reminders.removeWhere((r) => r.id == id);
     notifyListeners();
@@ -605,8 +626,10 @@ class UserDataStore extends ChangeNotifier {
   // SETTINGS
   // ==========================================
 
+  /// حفظ إعدادات المستخدم الجديدة وتحديث المستمعين وقاعدة البيانات.
   Future<void> putSettings(UserSettings newSettings) async {
     _settings = newSettings;
+    settingsNotifier.value = newSettings;
     notifyListeners();
     final userDb = UserDatabase.instance;
     if (userDb.isOpen) {
@@ -615,25 +638,47 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
+  /// تحديث إعدادات المستخدم.
   Future<void> updateSettings(UserSettings newSettings) =>
       putSettings(newSettings);
 
-  double get quranFontSize => 20.0;
+  /// حجم خط المصحف المعتمد حالياً في الإعدادات.
+  double get quranFontSize => _settings.quranFontSize;
+
+  /// اسم عائلة خط المصحف المعتمدة حالياً في الإعدادات.
+  String get quranFontFamily => _settings.quranFontFamilyName;
+
+  /// تغيير حجم خط المصحف ضمن الحدود المسموحة وحفظه.
+  Future<void> setQuranFontSize(double size) async {
+    final clamped = size.clamp(
+      UserSettings.minQuranFontSize,
+      UserSettings.maxQuranFontSize,
+    );
+    await updateSettings(_settings.copyWith(quranFontSize: clamped));
+  }
+
+  /// تغيير نوع خط المصحف وحفظه في الإعدادات.
+  Future<void> setQuranFontFamily(QuranFontFamilyOption fontFamily) async {
+    await updateSettings(_settings.copyWith(quranFontFamily: fontFamily));
+  }
 
   // ==========================================
   // AYAH LINKS (روابط الآيات)
   // ==========================================
 
+  /// استرجاع رابط آيات محدد بواسطة معرفه الفريد.
   AyahLinkItem? getAyahLink(String id) {
     return _ayahLinks.where((l) => l.id == id).firstOrNull;
   }
 
+  /// استرجاع جميع روابط الآيات التي تتضمن الآية المحددة.
   List<AyahLinkItem> getLinksForAyah(int surahNumber, int ayahNumber) {
     return _ayahLinks
         .where((l) => l.containsAyah(surahNumber, ayahNumber))
         .toList();
   }
 
+  /// حفظ رابط آيات جديد أو تحديث رابط موجود.
   Future<void> saveAyahLink(AyahLinkItem link) async {
     final idx = _ayahLinks.indexWhere((l) => l.id == link.id);
     if (idx != -1) {
@@ -649,6 +694,7 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
+  /// حذف رابط آيات بواسطة معرفه الفريد.
   Future<void> deleteAyahLink(String id) async {
     _ayahLinks.removeWhere((l) => l.id == id);
     notifyListeners();
@@ -659,6 +705,7 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
+  /// إضافة آية جديدة إلى رابط آيات قائم.
   Future<void> addVerseToLink(String linkId, AyahLinkVerse verse) async {
     final idx = _ayahLinks.indexWhere((l) => l.id == linkId);
     if (idx != -1) {
@@ -680,6 +727,7 @@ class UserDataStore extends ChangeNotifier {
     }
   }
 
+  /// إزالة آية محددة من رابط آيات مع حذف إحداثياتها في المخطط الشبكي.
   Future<void> removeVerseFromLink(
     String linkId,
     int surahNumber,
@@ -710,6 +758,7 @@ class UserDataStore extends ChangeNotifier {
     }
   }
 
+  /// تحديث الملاحظة التدبرية الخاصة بآية داخل رابط آيات محدد.
   Future<void> updateVerseNote(
     String linkId,
     int surahNumber,
@@ -740,6 +789,7 @@ class UserDataStore extends ChangeNotifier {
     }
   }
 
+  /// تحديث إحداثيات عقد الآيات في العرض الشبكي لرابط الآيات.
   Future<void> updateLinkPositions(
     String linkId,
     Map<String, LinkNodePosition> positions,
@@ -763,6 +813,7 @@ class UserDataStore extends ChangeNotifier {
     }
   }
 
+  /// حفظ حالة العرض والتقريب والإزاحة لشاشة رابط الآيات.
   Future<void> updateLinkViewState(
     String linkId, {
     String? viewMode,
@@ -794,6 +845,7 @@ class UserDataStore extends ChangeNotifier {
   // DATA INTEGRITY & RESET
   // ==========================================
 
+  /// إعادة ضبط ومسح جميع بيانات المستخدم وإلغاء جميع المنبهات المجدولة.
   Future<void> resetAllData() async {
     _readingPosition = ReadingPosition.defaultPosition();
     _notes.clear();
@@ -807,6 +859,7 @@ class UserDataStore extends ChangeNotifier {
     _tadbeerLookup.clear();
     _settings = const UserSettings();
     notifyListeners();
+    await LocalReminderService.instance.cancelAll();
     final userDb = UserDatabase.instance;
     if (userDb.isOpen) {
       await userDb.clearAllUserData();
@@ -814,19 +867,17 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
+  /// مسح جميع بيانات المستخدم وإعادتها للوضع الافتراضي.
   Future<void> resetAllUserData() => resetAllData();
 
   // ==========================================
   // TADBEER PAUSE (وقفة تدبر)
   // ==========================================
 
+  /// استرجاع إجابات وقفة التدبر المحفوظة لآية محددة إن وُجدت.
   TadbeerItem? getTadbeer(int surahNumber, int ayahNumber) {
     return _tadbeerLookup['$surahNumber:$ayahNumber'];
   }
-
-  /// Backward compatibility alias
-  TadbeerItem? getTadabbur(int surahNumber, int ayahNumber) =>
-      getTadbeer(surahNumber, ayahNumber);
 
   /// Resolves the most relevant reflection note for an ayah across Notes & Tadbeer.
   String? getReflectionForAyah(int surahNumber, int ayahNumber) {
@@ -841,6 +892,7 @@ class UserDataStore extends ChangeNotifier {
     return null;
   }
 
+  /// حفظ إجابات أسئلة وقفة التدبر لآية محددة أو حذفها إن صارت فارغة.
   Future<void> saveTadbeer({
     required int surahNumber,
     required int ayahNumber,
@@ -897,19 +949,7 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
-  /// Backward compatibility alias
-  Future<void> saveTadabbur({
-    required int surahNumber,
-    required int ayahNumber,
-    int? ayahId,
-    required Map<int, String> answers,
-  }) => saveTadbeer(
-    surahNumber: surahNumber,
-    ayahNumber: ayahNumber,
-    ayahId: ayahId,
-    answers: answers,
-  );
-
+  /// حذف إجابات وقفة التدبر المرتبطة بآية محددة.
   Future<void> deleteTadbeer(int surahNumber, int ayahNumber) async {
     final key = '$surahNumber:$ayahNumber';
     final existing = _tadbeerLookup.remove(key);
@@ -922,14 +962,11 @@ class UserDataStore extends ChangeNotifier {
     await saveToDisk();
   }
 
-  /// Backward compatibility alias
-  Future<void> deleteTadabbur(int surahNumber, int ayahNumber) =>
-      deleteTadbeer(surahNumber, ayahNumber);
-
   // ==========================================
   // SNAPSHOT EXPORT / RESTORE
   // ==========================================
 
+  /// تصدير لقطة كاملة أو مخصصة من بيانات المستخدم إلى خريطة JSON للنسخ الاحتياطي.
   Map<String, dynamic> exportSnapshot({
     bool notes = true,
     bool bookmarks = true,
@@ -963,6 +1000,7 @@ class UserDataStore extends ChangeNotifier {
   /// Restore intentionally replaces the existing user dataset.
   /// It must NEVER merge with existing data, ensuring mathematical consistency.
   Future<void> replaceAllUserData(Map<String, dynamic> data) async {
+    await LocalReminderService.instance.cancelAll();
     _applyData(data);
     notifyListeners();
     final userDb = UserDatabase.instance;
@@ -971,5 +1009,6 @@ class UserDataStore extends ChangeNotifier {
       await _persistAllToSQLite();
     }
     await saveToDisk();
+    await LocalReminderService.instance.syncAllReminders(_reminders);
   }
 }

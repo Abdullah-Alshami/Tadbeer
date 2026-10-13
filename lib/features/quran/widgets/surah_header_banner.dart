@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/storage/user_data_store.dart';
 import '../../../core/utils/arabic_search_normalizer.dart';
 import '../data/quran_models.dart';
 
@@ -14,11 +15,14 @@ import '../data/quran_models.dart';
 /// - Central Surah title flanked gracefully by fine horizontal arabesque rules and diamond motifs.
 /// - Seamless integrated metadata on the right and an authentic circular seal (خاتم السورة) on the left.
 /// - Strictly maintains existing height, margins, and 15pt font size.
+/// لافتة زخرفية تعرض في مطلع كل سورة في المصحف الشريف بطابع المصحف المدني.
 class SurahHeaderBanner extends StatelessWidget {
   final Surah surah;
 
+  /// ينشئ لافتة ترويسة السورة القرآنية.
   const SurahHeaderBanner({super.key, required this.surah});
 
+  /// يبني ترويسة السورة المزخرفة مع اسم السورة ونوعها وعدد آياتها ورقمها.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -34,11 +38,14 @@ class SurahHeaderBanner extends StatelessWidget {
       child: CustomPaint(
         painter: _SurahFramePainter(isDark: isDark),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2.5, horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
               // Surah Revelation Type & Ayah Count (seamlessly integrated into the band)
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -120,9 +127,11 @@ class SurahHeaderBanner extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
+  /// يبني الخط الزخرفي الجانبي المتدرج المحيط باسم السورة.
   Widget _buildFlankRule(Color color, {required bool isLeft}) {
     return Container(
       width: 14,
@@ -139,11 +148,14 @@ class SurahHeaderBanner extends StatelessWidget {
 }
 
 /// Custom painter rendering the authentic miniature seal medallion (خاتم السورة).
+/// رسام مخصص يرسم خاتم السورة الدائري المصغر الذي يضم رقم السورة.
 class _SurahSealPainter extends CustomPainter {
   final bool isDark;
 
+  /// ينشئ رسام خاتم السورة الدائري.
   const _SurahSealPainter({required this.isDark});
 
+  /// يرسم دوائر ونقاط خاتم السورة الزخرفية على لوحة الرسم.
   @override
   void paint(Canvas canvas, Size size) {
     final goldColor = isDark
@@ -186,17 +198,21 @@ class _SurahSealPainter extends CustomPainter {
     canvas.drawCircle(Offset(center.dx + rMid, center.dy), dotR, dotPaint);
   }
 
+  /// يحدد ما إذا كان يلزم إعادة رسم الخاتم عند تغير الوضع الليلي أو النهاري.
   @override
   bool shouldRepaint(covariant _SurahSealPainter oldDelegate) =>
       oldDelegate.isDark != isDark;
 }
 
 /// Custom painter rendering the authentic Madinah Mushaf cartouche frame.
+/// رسام مخصص يرسم الإطار الزخرفي الذهبي المزدوج لترويسة السورة.
 class _SurahFramePainter extends CustomPainter {
   final bool isDark;
 
+  /// ينشئ رسام إطار ترويسة السورة.
   const _SurahFramePainter({required this.isDark});
 
+  /// يرسم خلفية الترويسة والإطار الذهبي المزدوج والزخارف الجانبية والركنية.
   @override
   void paint(Canvas canvas, Size size) {
     final goldColor = isDark
@@ -349,6 +365,7 @@ class _SurahFramePainter extends CustomPainter {
     canvas.drawCircle(Offset(rect.left + 2.0, centerY), 0.8, ornamentPaint);
   }
 
+  /// يحدد ما إذا كان يلزم إعادة رسم الإطار عند تغير الوضع الليلي أو النهاري.
   @override
   bool shouldRepaint(covariant _SurahFramePainter oldDelegate) {
     return oldDelegate.isDark != isDark;
@@ -356,21 +373,26 @@ class _SurahFramePainter extends CustomPainter {
 }
 
 /// Decorative Basmalah banner shown between Surahs (except Surah 1 & 9).
+/// لافتة البسملة التي تعرض في مطلع السور (باستثناء سورتي الفاتحة والتوبة).
 class BismillahBanner extends StatelessWidget {
+  /// ينشئ ودجت لافتة البسملة.
   const BismillahBanner({super.key});
 
+  /// يبني نص البسملة متمركزاً بالخط القرآني المختار.
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 1),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fontFamily = UserDataStore.instance.quranFontFamily;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
       child: Center(
         child: Text(
           'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'AmiriQuran',
+            fontFamily: fontFamily,
             fontSize: 17,
-            color: AppColors.mushafQuranText,
+            color: isDark ? AppColors.darkTextPrimary : AppColors.mushafQuranText,
           ),
         ),
       ),

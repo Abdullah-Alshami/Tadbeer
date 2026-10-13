@@ -7,17 +7,24 @@ import '../ayah_link_repository.dart';
 import '../../quran/data/quran_models.dart';
 import '../../quran/data/quran_repository.dart';
 
+/// نافذة حوار لاختيار آية قرآنية وإضافتها مع ملاحظة تدبرية إلى رابط الآيات.
+///
 /// Dialog allowing user to select a verified Quran Ayah and add it to an Ayah Link.
 class AddVerseToLinkDialog extends StatefulWidget {
+  /// معرّف رابط الآيات المراد إضافة الآية إليه.
   final String linkId;
+
+  /// قائمة معرّفات الآيات المضافة مسبقاً في هذا الرابط.
   final List<int> existingAyahIds;
 
+  /// ينشئ نافذة حوار إضافة آية إلى الرابط.
   const AddVerseToLinkDialog({
     super.key,
     required this.linkId,
     this.existingAyahIds = const [],
   });
 
+  /// يعرض نافذة حوار اختيار الآية وإضافتها إلى الرابط.
   static Future<bool?> show(
     BuildContext context, {
     required String linkId,
@@ -32,16 +39,19 @@ class AddVerseToLinkDialog extends StatefulWidget {
     );
   }
 
+  /// ينشئ حالة نافذة حوار إضافة الآية.
   @override
   State<AddVerseToLinkDialog> createState() => _AddVerseToLinkDialogState();
 }
 
+/// الحالة الداخلية لنافذة إضافة آية إلى رابط الآيات.
 class _AddVerseToLinkDialogState extends State<AddVerseToLinkDialog> {
   late int _selectedSurahNumber;
   late int _selectedAyahNumber;
   final TextEditingController _noteController = TextEditingController();
   bool _isAdding = false;
 
+  /// يهيئ السورة والآية الافتراضية عند فتح النافذة.
   @override
   void initState() {
     super.initState();
@@ -49,26 +59,31 @@ class _AddVerseToLinkDialogState extends State<AddVerseToLinkDialog> {
     _selectedAyahNumber = 1;
   }
 
+  /// يحرر موارد متحكم حقل الملاحظة عند إغلاق النافذة.
   @override
   void dispose() {
     _noteController.dispose();
     super.dispose();
   }
 
+  /// يعيد بيانات السورة المختارة حالياً.
   Surah get _currentSurah =>
       QuranRepository.instance.getSurah(_selectedSurahNumber);
 
+  /// يعيد بيانات الآية المختارة حالياً.
   Ayah? get _currentAyah => QuranRepository.instance.getAyah(
     _selectedSurahNumber,
     _selectedAyahNumber,
   );
 
+  /// يتحقق مما إذا كانت الآية المختارة مضافة مسبقاً في الرابط.
   bool get _isAlreadyAdded {
     final ayah = _currentAyah;
     if (ayah == null) return false;
     return widget.existingAyahIds.contains(ayah.id);
   }
 
+  /// يحفظ الآية المختارة وملاحظتها في الرابط ثم يغلق النافذة.
   Future<void> _submit() async {
     final ayah = _currentAyah;
     if (ayah == null || _isAlreadyAdded) return;
@@ -96,6 +111,7 @@ class _AddVerseToLinkDialogState extends State<AddVerseToLinkDialog> {
     }
   }
 
+  /// يبني واجهة نافذة اختيار السورة والآية ومعاينة النص القرآني.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;

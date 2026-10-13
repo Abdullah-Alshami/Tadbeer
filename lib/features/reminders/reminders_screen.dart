@@ -3,32 +3,47 @@ import 'package:uuid/uuid.dart';
 
 import '../../app/localization.dart';
 import '../../app/theme.dart';
-import '../../core/notifications/local_reminder_service.dart';
+import '../../core/services/local_reminder_service.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
 import '../../features/reminders/reminder_model.dart';
 
+/// شاشة إدارة التذكيرات والمنبهات المحلية لقراءة الورد القرآني.
+///
 /// Reminders management screen for scheduling local Quran recitation alerts.
 ///
-/// EDUCATIONAL NOTE:
-/// Reminder Architecture:
-/// 1. 100% offline via [LocalReminderService] (OS AlarmManager / Linux D-Bus / APNS local).
-/// 2. Reminders persist in [UserDataStore] and synchronize state with the OS scheduler.
-/// 3. Supports Once, Daily, and specific Weekday repeat configurations.
+/// Supports two user-selectable alert types:
+/// - [ReminderAlertType.notification] (إشعار عادي)
+/// - [ReminderAlertType.alarm] (تنبيه كالمنبه)
 class RemindersScreen extends StatefulWidget {
+  /// ينشئ شاشة إدارة التذكيرات.
   const RemindersScreen({super.key});
 
+  /// ينشئ حالة شاشة التذكيرات.
   @override
   State<RemindersScreen> createState() => _RemindersScreenState();
 }
 
+/// الحالة الداخلية لشاشة التذكيرات وإدارة الإضافة والتعديل والجدولة.
 class _RemindersScreenState extends State<RemindersScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  /// يطلب أذونات الإشعارات والمنبهات عند فتح الشاشة.
   @override
   void initState() {
     super.initState();
     LocalReminderService.instance.requestPermissions();
   }
 
+  /// يحرر موارد متحكم حقل البحث عند إغلاق الشاشة.
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  /// يفتح نافذة الحوار لإضافة تذكير جديد أو تعديل تذكير حالي.
   void _openReminderDialog([ReminderItem? existing]) {
     final l10n = context.l10n;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -36,6 +51,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
         existing?.time ?? const TimeOfDay(hour: 6, minute: 0);
     ReminderRepeatMode repeatMode =
         existing?.repeatMode ?? ReminderRepeatMode.daily;
+    ReminderAlertType alertType =
+        existing?.alertType ?? ReminderAlertType.notification;
     List<int> selectedDays = List.from(
       existing?.selectedDays ?? [1, 2, 3, 4, 5, 6, 7],
     );
@@ -101,7 +118,10 @@ class _RemindersScreenState extends State<RemindersScreen> {
                       style: const TextStyle(fontFamily: 'Amiri', fontSize: 14),
                     ),
                     trailing: Text(
-                      '${ArabicSearchNormalizer.formatDigits(selectedTime.hour, minDigits: 2)}:${ArabicSearchNormalizer.formatDigits(selectedTime.minute, minDigits: 2)}',
+                      ReminderItem.formatTime12Hour(
+                        selectedTime.hour,
+                        selectedTime.minute,
+                      ),
                       style: const TextStyle(
                         fontFamily: 'Amiri',
                         fontSize: 18,
@@ -113,11 +133,61 @@ class _RemindersScreenState extends State<RemindersScreen> {
                       final picked = await showTimePicker(
                         context: context,
                         initialTime: selectedTime,
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(
+                              context,
+                            ).copyWith(alwaysUse24HourFormat: false),
+                            child: child!,
+                          );
+                        },
                       );
                       if (picked != null) {
                         setDialogState(() => selectedTime = picked);
                       }
                     },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Alert Type Selector (إشعار vs تنبيه كالمنبه)
+                  Text(
+                    'طريقة التنبيه:',
+                    style: TextStyle(
+                      fontFamily: 'Amiri',
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.comsilk : AppColors.oliveDark,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _AlertTypeOptionCard(
+                          icon: Icons.notifications_none_rounded,
+                          title: 'إشعار',
+                          subtitle: 'إشعار عادي في الشريط',
+                          selected: alertType == ReminderAlertType.notification,
+                          isDark: isDark,
+                          onTap: () => setDialogState(
+                            () => alertType = ReminderAlertType.notification,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _AlertTypeOptionCard(
+                          icon: Icons.alarm_rounded,
+                          title: 'منبه',
+                          subtitle: 'رنين مستمر كالمنبه',
+                          selected: alertType == ReminderAlertType.alarm,
+                          isDark: isDark,
+                          onTap: () => setDialogState(
+                            () => alertType = ReminderAlertType.alarm,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
@@ -250,6 +320,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                     hour: selectedTime.hour,
                     minute: selectedTime.minute,
                     repeatMode: repeatMode,
+                    alertType: alertType,
                     selectedDays: selectedDays,
                     isEnabled: existing?.isEnabled ?? true,
                     createdAt: existing?.createdAt ?? DateTime.now(),
@@ -260,6 +331,20 @@ class _RemindersScreenState extends State<RemindersScreen> {
                     reminder,
                   );
                   if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                  if (mounted) {
+                    final modeLabel = alertType == ReminderAlertType.alarm
+                        ? 'كمنبه'
+                        : 'كإشعار';
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'تم حفظ وجدولة التنبيه ($modeLabel) بنجاح',
+                          style: const TextStyle(fontFamily: 'Amiri'),
+                        ),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.olive,
@@ -280,6 +365,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
     );
   }
 
+  /// يبدل حالة اختيار يوم من أيام الأسبوع مع ضمان بقاء يوم واحد على الأقل محدداً.
   void _toggleDay(StateSetter setDialogState, List<int> days, int day) {
     setDialogState(() {
       if (days.contains(day)) {
@@ -290,6 +376,29 @@ class _RemindersScreenState extends State<RemindersScreen> {
     });
   }
 
+  /// يرسل تنبيهاً أو منبهاً تجريبياً فورياً للتحقق من عمل الإشعارات على الجهاز.
+  Future<void> _sendTestAlert(ReminderAlertType alertType) async {
+    final sent = await LocalReminderService.instance.showTestNotification(
+      alertType: alertType,
+    );
+    if (!mounted) return;
+    final isAlarm = alertType == ReminderAlertType.alarm;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          sent
+              ? (isAlarm
+                    ? 'تم إطلاق منبه تجريبي الآن — تفقد الإشعارات لإيقافه'
+                    : 'تم إرسال إشعار تجريبي الآن — تفقد شريط الإشعارات')
+              : 'تعذر إرسال التنبيه، يرجى التأكد من تفعيل أذونات الإشعارات في إعدادات الجهاز',
+          style: const TextStyle(fontFamily: 'Amiri'),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  /// يبني واجهة شاشة التذكيرات مع حقل البحث وقائمة التنبيهات المجدولة.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -306,6 +415,47 @@ class _RemindersScreenState extends State<RemindersScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          actions: [
+            PopupMenuButton<ReminderAlertType>(
+              tooltip: 'تجربة الإشعار أو المنبه الآن',
+              icon: const Icon(Icons.notifications_active_outlined),
+              onSelected: _sendTestAlert,
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: ReminderAlertType.notification,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.notifications_none_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'تجربة إشعار الآن',
+                          style: TextStyle(fontFamily: 'Amiri'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: ReminderAlertType.alarm,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.alarm_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'تجربة منبه الآن',
+                          style: TextStyle(fontFamily: 'Amiri'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _openReminderDialog(),
@@ -323,9 +473,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
         body: ListenableBuilder(
           listenable: UserDataStore.instance,
           builder: (context, _) {
-            final reminders = UserDataStore.instance.reminders;
+            final allReminders = UserDataStore.instance.reminders;
 
-            if (reminders.isEmpty) {
+            if (allReminders.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -351,30 +501,109 @@ class _RemindersScreenState extends State<RemindersScreen> {
               );
             }
 
-            return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: reminders.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final reminder = reminders[index];
-                return _ReminderCard(
-                  reminder: reminder,
-                  onEdit: () => _openReminderDialog(reminder),
-                  onToggle: (bool val) async {
-                    final updated = reminder.copyWith(isEnabled: val);
-                    await UserDataStore.instance.putReminder(updated);
-                    await LocalReminderService.instance.scheduleReminder(
-                      updated,
-                    );
-                  },
-                  onDelete: () async {
-                    await LocalReminderService.instance.cancelReminder(
-                      reminder,
-                    );
-                    await UserDataStore.instance.removeReminder(reminder.id);
-                  },
-                );
-              },
+            final normalizedQuery = ArabicSearchNormalizer.normalize(
+              _searchQuery,
+            );
+            final reminders = allReminders.where((r) {
+              if (normalizedQuery.isEmpty) return true;
+              return ArabicSearchNormalizer.normalize(r.title).contains(
+                normalizedQuery,
+              );
+            }).toList();
+
+            return Column(
+              children: [
+                // Search Input Field
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (val) =>
+                        setState(() => _searchQuery = val.trim()),
+                    decoration: InputDecoration(
+                      hintText: l10n.searchRemindersHint,
+                      hintStyle: TextStyle(
+                        fontFamily: 'Amiri',
+                        fontSize: 14,
+                        color: isDark
+                            ? AppColors.nightSubtitle
+                            : AppColors.daySubtitle,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: AppColors.olive,
+                      ),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 20),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: isDark
+                          ? AppColors.darkSurface
+                          : AppColors.comsilk,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Reminders List / Empty Query Results
+                Expanded(
+                  child: reminders.isEmpty
+                      ? Center(
+                          child: Text(
+                            l10n.noSearchResults,
+                            style: TextStyle(
+                              fontFamily: 'Amiri',
+                              fontSize: 15,
+                              color: isDark
+                                  ? AppColors.nightSubtitle
+                                  : AppColors.daySubtitle,
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: reminders.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final reminder = reminders[index];
+                            return _ReminderCard(
+                              reminder: reminder,
+                              onEdit: () => _openReminderDialog(reminder),
+                              onToggle: (bool val) async {
+                                final updated = reminder.copyWith(
+                                  isEnabled: val,
+                                );
+                                await UserDataStore.instance.putReminder(
+                                  updated,
+                                );
+                                await LocalReminderService.instance
+                                    .scheduleReminder(updated);
+                              },
+                              onDelete: () async {
+                                await LocalReminderService.instance
+                                    .cancelReminder(reminder);
+                                await UserDataStore.instance.removeReminder(
+                                  reminder.id,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             );
           },
         ),
@@ -383,12 +612,92 @@ class _RemindersScreenState extends State<RemindersScreen> {
   }
 }
 
+/// بطاقة خيار لتحديد طريقة التنبيه (إشعار عادي أو منبه صوتي).
+class _AlertTypeOptionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  /// ينشئ بطاقة خيار نوع التنبيه.
+  const _AlertTypeOptionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  /// يبني واجهة بطاقة خيار نوع التنبيه.
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = selected ? AppColors.olive : AppColors.border(context);
+    final bgColor = selected
+        ? AppColors.olive.withValues(alpha: isDark ? 0.25 : 0.14)
+        : (isDark ? AppColors.darkSurface : AppColors.comsilk);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: borderColor, width: selected ? 1.8 : 1.0),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: selected
+                  ? AppColors.olive
+                  : (isDark ? AppColors.nightSubtitle : AppColors.daySubtitle),
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Amiri',
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: selected
+                    ? (isDark ? AppColors.comsilk : AppColors.oliveDark)
+                    : (isDark
+                          ? AppColors.nightQuranText
+                          : AppColors.dayQuranText),
+              ),
+            ),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Amiri',
+                fontSize: 11,
+                color: isDark ? AppColors.nightSubtitle : AppColors.daySubtitle,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// شريحة اختيار ليوم واحد من أيام الأسبوع عند ضبط التكرار المخصص.
 class _DayChip extends StatelessWidget {
   final int day;
   final String label;
   final bool selected;
   final VoidCallback onToggle;
 
+  /// ينشئ شريحة اختيار يوم الأسبوع.
   const _DayChip({
     required this.day,
     required this.label,
@@ -396,6 +705,7 @@ class _DayChip extends StatelessWidget {
     required this.onToggle,
   });
 
+  /// يبني واجهة شريحة اليوم القابلة للتحديد.
   @override
   Widget build(BuildContext context) {
     return FilterChip(
@@ -411,12 +721,14 @@ class _DayChip extends StatelessWidget {
   }
 }
 
+/// بطاقة عرض لتذكير واحد تتضمن الوقت ونوع التنبيه ومفتاح التفعيل.
 class _ReminderCard extends StatelessWidget {
   final ReminderItem reminder;
   final VoidCallback onEdit;
   final ValueChanged<bool> onToggle;
   final VoidCallback onDelete;
 
+  /// ينشئ بطاقة عرض التذكير.
   const _ReminderCard({
     required this.reminder,
     required this.onEdit,
@@ -424,6 +736,7 @@ class _ReminderCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  /// يبني واجهة بطاقة التذكير وأزرار التحكم به.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -441,14 +754,11 @@ class _ReminderCard extends StatelessWidget {
         break;
     }
 
-    final hourStr = ArabicSearchNormalizer.formatDigits(
-      reminder.hour,
-      minDigits: 2,
-    );
-    final minStr = ArabicSearchNormalizer.formatDigits(
-      reminder.minute,
-      minDigits: 2,
-    );
+    final isAlarm = reminder.alertType == ReminderAlertType.alarm;
+    final alertTypeLabel = isAlarm ? 'منبه' : 'إشعار';
+    final alertTypeIcon = isAlarm
+        ? Icons.alarm_on_rounded
+        : Icons.notifications_none_rounded;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -459,30 +769,37 @@ class _ReminderCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Time display
+          // Time & Alert Type display
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '$hourStr:$minStr',
+                reminder.formattedTime,
                 style: TextStyle(
                   fontFamily: 'Amiri',
-                  fontSize: 26,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: reminder.isEnabled
                       ? (isDark ? AppColors.comsilk : AppColors.oliveDark)
                       : Colors.grey,
                 ),
               ),
-              Text(
-                repeatSubtitle,
-                style: TextStyle(
-                  fontFamily: 'Amiri',
-                  fontSize: 12,
-                  color: isDark
-                      ? AppColors.nightSubtitle
-                      : AppColors.daySubtitle,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(alertTypeIcon, size: 13, color: AppColors.olive),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$alertTypeLabel • $repeatSubtitle',
+                    style: TextStyle(
+                      fontFamily: 'Amiri',
+                      fontSize: 12,
+                      color: isDark
+                          ? AppColors.nightSubtitle
+                          : AppColors.daySubtitle,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

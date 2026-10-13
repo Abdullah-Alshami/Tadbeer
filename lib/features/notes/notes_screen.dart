@@ -5,11 +5,14 @@ import '../../app/theme.dart';
 import '../../core/storage/user_data_store.dart';
 import '../../core/utils/arabic_search_normalizer.dart';
 import '../../core/utils/note_pdf_exporter.dart';
+import '../../core/utils/tadbeer_journal_exporter.dart';
 import '../../features/notes/note_model.dart';
 import '../../features/quran/data/quran_repository.dart';
 import '../quran/screens/quran_screen.dart';
 import 'note_editor_screen.dart';
 
+/// شاشة عرض وإدارة الخواطر المرتبطة بالآيات والملاحظات الحرة في قائمة موحدة.
+///
 /// Notes screen displaying both Ayah Notes and Free Notes in a unified stream.
 ///
 /// EDUCATIONAL NOTE:
@@ -18,23 +21,29 @@ import 'note_editor_screen.dart';
 /// - Sorts newest first.
 /// - Supports quick full-text search matching normalized Arabic content.
 /// - Individual notes can be exported to formatted A4 PDF documents with Amiri fonts.
+/// - Complete periodic reflection journals can be exported to PDF/Markdown.
 class NotesScreen extends StatefulWidget {
+  /// ينشئ شاشة الملاحظات والخواطر.
   const NotesScreen({super.key});
 
+  /// ينشئ حالة شاشة الملاحظات.
   @override
   State<NotesScreen> createState() => _NotesScreenState();
 }
 
+/// الحالة الداخلية لشاشة الملاحظات وإدارة البحث والتصدير والحذف.
 class _NotesScreenState extends State<NotesScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
+  /// يحرر موارد متحكم حقل البحث عند إغلاق الشاشة.
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
+  /// يفتح شاشة محرر الملاحظات لإنشاء ملاحظة جديدة أو تعديل ملاحظة قائمة.
   void _openFreeNoteEditor([NoteItem? existing]) {
     Navigator.push(
       context,
@@ -44,6 +53,7 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
+  /// يبني واجهة شاشة الملاحظات مع شريط البحث وقائمة البطاقات.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -60,6 +70,13 @@ class _NotesScreenState extends State<NotesScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.auto_stories_rounded),
+              tooltip: 'تصدير دفتر التدبر والخواطر',
+              onPressed: () => TadbeerJournalExporter.showExportDialog(context),
+            ),
+          ],
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _openFreeNoteEditor(),
@@ -83,7 +100,7 @@ class _NotesScreenState extends State<NotesScreen> {
                 controller: _searchController,
                 onChanged: (val) => setState(() => _query = val.trim()),
                 decoration: InputDecoration(
-                  hintText: 'بحث في الملاحظات...',
+                  hintText: l10n.searchNotesHint,
                   hintStyle: TextStyle(
                     fontFamily: 'Amiri',
                     fontSize: 14,
@@ -92,6 +109,15 @@ class _NotesScreenState extends State<NotesScreen> {
                         : AppColors.daySubtitle,
                   ),
                   prefixIcon: const Icon(Icons.search, color: AppColors.olive),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                        )
+                      : null,
                   filled: true,
                   fillColor: isDark ? AppColors.darkSurface : AppColors.comsilk,
                   border: OutlineInputBorder(
@@ -194,6 +220,7 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
+  /// يصدر الملاحظة المحددة إلى ملف PDF ويفتح نافذة المشاركة.
   void _exportNotePdf(NoteItem note) async {
     try {
       await NotePdfExporter.exportAndShareNote(note);
@@ -211,6 +238,7 @@ class _NotesScreenState extends State<NotesScreen> {
     }
   }
 
+  /// يعرض نافذة حوار لتأكيد حذف الملاحظة المختارة.
   void _showDeleteConfirmDialog(NoteItem note) {
     final l10n = context.l10n;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -261,6 +289,7 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 }
 
+/// بطاقة عرض لملاحظة واحدة (سواء كانت مرتبطة بآية أو ملاحظة حرة).
 class _NoteCard extends StatelessWidget {
   final NoteItem note;
   final VoidCallback onTap;
@@ -268,6 +297,7 @@ class _NoteCard extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onExportPdf;
 
+  /// ينشئ بطاقة عرض الملاحظة.
   const _NoteCard({
     required this.note,
     required this.onTap,
@@ -276,6 +306,7 @@ class _NoteCard extends StatelessWidget {
     required this.onExportPdf,
   });
 
+  /// يبني واجهة بطاقة الملاحظة مع قائمة الخيارات السريعة.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;

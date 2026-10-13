@@ -5,14 +5,19 @@ import '../../../app/theme.dart';
 import '../ayah_link_model.dart';
 import '../ayah_link_repository.dart';
 
+/// نافذة حوار مبسطة لإنشاء رابط آيات جديد أو تعديل رابط موجود.
+///
 /// Minimal dialog to create or edit an Ayah Link.
 ///
 /// Keeps fields minimal: Title is required, Description/Idea is optional.
 class CreateLinkDialog extends StatefulWidget {
+  /// رابط الآيات المراد تعديله في حال وجوده، أو فارغ عند الإنشاء الجديد.
   final AyahLinkItem? existingLink;
 
+  /// ينشئ نافذة حوار إنشاء أو تعديل رابط الآيات.
   const CreateLinkDialog({super.key, this.existingLink});
 
+  /// يعرض نافذة حوار إنشاء أو تعديل رابط الآيات ويعيد العنصر الناتج.
   static Future<AyahLinkItem?> show(
     BuildContext context, {
     AyahLinkItem? existingLink,
@@ -23,16 +28,19 @@ class CreateLinkDialog extends StatefulWidget {
     );
   }
 
+  /// ينشئ حالة نافذة حوار إنشاء أو تعديل رابط الآيات.
   @override
   State<CreateLinkDialog> createState() => _CreateLinkDialogState();
 }
 
+/// الحالة الداخلية لنافذة إنشاء أو تعديل رابط الآيات.
 class _CreateLinkDialogState extends State<CreateLinkDialog> {
   late final TextEditingController _titleController;
   late final TextEditingController _descController;
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
 
+  /// يهيئ حقول العنوان والوصف بالقيم الحالية عند التعديل.
   @override
   void initState() {
     super.initState();
@@ -44,6 +52,7 @@ class _CreateLinkDialogState extends State<CreateLinkDialog> {
     );
   }
 
+  /// يحرر موارد متحكمات النصوص عند إغلاق النافذة.
   @override
   void dispose() {
     _titleController.dispose();
@@ -51,6 +60,7 @@ class _CreateLinkDialogState extends State<CreateLinkDialog> {
     super.dispose();
   }
 
+  /// يتحقق من صحة المدخلات ويحفظ رابط الآيات الجديد أو المحدث.
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -85,6 +95,7 @@ class _CreateLinkDialogState extends State<CreateLinkDialog> {
     }
   }
 
+  /// يبني نموذج إدخال عنوان ووصف رابط الآيات.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;

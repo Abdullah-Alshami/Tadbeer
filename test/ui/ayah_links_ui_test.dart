@@ -194,5 +194,58 @@ void main() {
         expect(find.textContaining('٢٣'), findsWidgets);
       },
     );
+
+    testWidgets(
+      'Network view displays simplified bottom controls: Add Ayah and Center button only, no zoom/dpad',
+      (WidgetTester tester) async {
+        late AyahLinkItem link;
+        await tester.runAsync(() async {
+          final repo = AyahLinkRepository();
+          link = await repo.createLink(
+            title: 'اختبار التحكم بالشبكة',
+            description: 'تجربة زر التمركز وزر إضافة آية',
+          );
+        });
+
+        await tester.pumpWidget(
+          buildTestApp(AyahLinkDetailScreen(linkId: link.id)),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Zoom controls and D-Pad arrows must NOT exist
+        expect(find.byTooltip('تكبير'), findsNothing);
+        expect(find.byTooltip('تصغير'), findsNothing);
+        expect(find.byTooltip('أعلى'), findsNothing);
+        expect(find.byTooltip('أسفل'), findsNothing);
+        expect(find.byTooltip('يمين'), findsNothing);
+        expect(find.byTooltip('يسار'), findsNothing);
+
+        // 2. Exactly the two required buttons exist: Add Verse and Center
+        expect(
+          find.widgetWithText(FloatingActionButton, 'إضافة آية'),
+          findsOneWidget,
+        );
+        final centerButton = find.byTooltip('العودة إلى الوسط');
+        expect(centerButton, findsOneWidget);
+        expect(find.byIcon(Icons.center_focus_strong), findsOneWidget);
+
+        // 3. Tapping Center button triggers centerView smoothly without error
+        await tester.tap(centerButton);
+        await tester.pumpAndSettle();
+
+        // 4. Switching to Ordered view hides the Center button, Add Verse remains
+        await tester.runAsync(() async {
+          await tester.tap(find.text('مرتب'));
+          await Future.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pumpAndSettle();
+
+        expect(find.byTooltip('العودة إلى الوسط'), findsNothing);
+        expect(
+          find.widgetWithText(FloatingActionButton, 'إضافة آية'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

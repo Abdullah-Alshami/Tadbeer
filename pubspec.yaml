@@ -44,6 +44,9 @@ dependencies:
   sqflite_common: ^2.5.13+1
   sqflite_common_ffi: ^2.4.3
   path: ^1.9.1
+  flutter_timezone: ^5.1.1
+  qr_flutter: ^4.1.0
+  flutter_islamic_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +59,31 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+#  icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
+
+  adaptive_icon_background: "#3C4A30"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+
+  web:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+
+  windows:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+
+  macos:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -70,12 +98,24 @@ flutter:
 
   assets:
     - assets/quran/quran_data.json
-    - assets/quran/mushaf_layout.json
+    - assets/quran/word_meanings.json
     - assets/fonts/
-    - assets/quran/qcf_v2/fonts/
-    - assets/quran/qcf_v2/glyphs/
+    - assets/icons/app_logo.png
+    - assets/icons/app_icon.png
 
   fonts:
+    - family: ScheherazadeNew
+      fonts:
+        - asset: assets/fonts/ScheherazadeNew-Regular.ttf
+    - family: NotoNaskhArabic
+      fonts:
+        - asset: assets/fonts/NotoNaskhArabic-Regular.ttf
+    - family: Harmattan
+      fonts:
+        - asset: assets/fonts/Harmattan-Regular.ttf
+    - family: Lateef
+      fonts:
+        - asset: assets/fonts/Lateef-Regular.ttf
     - family: AmiriQuran
       fonts:
         - asset: assets/fonts/AmiriQuran-Regular.ttf

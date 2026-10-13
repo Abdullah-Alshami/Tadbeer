@@ -6,11 +6,10 @@ import 'package:tadbeer/app/localization.dart';
 import 'package:tadbeer/core/storage/user_data_store.dart';
 import 'package:tadbeer/core/storage/user_database.dart';
 import 'package:tadbeer/features/notes/note_model.dart';
-import 'package:tadbeer/features/quran/data/mushaf_layout_models.dart';
 import 'package:tadbeer/features/quran/data/quran_repository.dart';
-import 'package:tadbeer/features/quran/renderers/mushaf_word_widget.dart';
+import 'package:tadbeer/features/quran/screens/quran_page_view.dart';
 import 'package:tadbeer/features/quran/widgets/ayah_action_sheet.dart';
-import 'package:tadbeer/features/tadabbur/tadbeer_intro_screen.dart';
+import 'package:tadbeer/features/tadbeer/tadbeer_intro_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,51 +39,36 @@ void main() {
     );
   }
 
-  group('Ayah End Marker States & Spacing Invariance Tests', () {
-    const endMarkerWord = MushafWord(
-      ayahId: 1,
-      pageNumber: 1,
-      lineNumber: 2,
-      position: 5,
-      text: '١',
-      glyph: 'ﰀ',
-      surah: 1,
-      ayah: 1,
-      ayahNumber: 1,
-      isAyahEnd: true,
-    );
-
-    testWidgets('Normal State: displays authentic rosette glyph', (
+  group('QuranPageView Ayah Indicator Icons Tests', () {
+    testWidgets('Normal State: displays no bookmark or note icon', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        wrapWithApp(const MushafWordWidget(word: endMarkerWord)),
-      );
+      final page1 = QuranRepository.instance.getPage(1);
+      await tester.pumpWidget(wrapWithApp(QuranPageView(page: page1)));
       await tester.pumpAndSettle();
 
-      expect(find.text('ﰀ'), findsOneWidget);
-      expect(find.text('🔖'), findsNothing);
-      expect(find.text('📝'), findsNothing);
-      expect(find.text('🔖📝'), findsNothing);
+      expect(find.byIcon(Icons.bookmark_rounded), findsNothing);
+      expect(find.byIcon(Icons.edit_note_rounded), findsNothing);
     });
 
-    testWidgets('Bookmarked State: displays 🔖 overlay', (tester) async {
+    testWidgets('Bookmarked State: displays bookmark icon next to ayah', (
+      tester,
+    ) async {
+      final page1 = QuranRepository.instance.getPage(1);
       final ayah = QuranRepository.instance.getAyah(1, 1)!;
       await tester.runAsync(() async {
         await UserDataStore.instance.toggleBookmark(ayah);
       });
 
-      await tester.pumpWidget(
-        wrapWithApp(const MushafWordWidget(word: endMarkerWord)),
-      );
+      await tester.pumpWidget(wrapWithApp(QuranPageView(page: page1)));
       await tester.pumpAndSettle();
 
-      expect(find.text('🔖'), findsOneWidget);
-      expect(find.text('📝'), findsNothing);
-      expect(find.text('🔖📝'), findsNothing);
+      expect(find.byIcon(Icons.bookmark_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.edit_note_rounded), findsNothing);
     });
 
-    testWidgets('Note State: displays 📝 overlay', (tester) async {
+    testWidgets('Note State: displays note icon next to ayah', (tester) async {
+      final page1 = QuranRepository.instance.getPage(1);
       final ayah = QuranRepository.instance.getAyah(1, 1)!;
       await tester.runAsync(() async {
         await UserDataStore.instance.saveNote(
@@ -98,68 +82,23 @@ void main() {
         );
       });
 
-      await tester.pumpWidget(
-        wrapWithApp(const MushafWordWidget(word: endMarkerWord)),
-      );
+      await tester.pumpWidget(wrapWithApp(QuranPageView(page: page1)));
       await tester.pumpAndSettle();
 
-      expect(find.text('📝'), findsOneWidget);
-      expect(find.text('🔖'), findsNothing);
-      expect(find.text('🔖📝'), findsNothing);
-    });
-
-    testWidgets('Bookmarked + Note State: displays 🔖📝 overlay', (
-      tester,
-    ) async {
-      final ayah = QuranRepository.instance.getAyah(1, 1)!;
-      await tester.runAsync(() async {
-        await UserDataStore.instance.toggleBookmark(ayah);
-        await UserDataStore.instance.saveNote(
-          type: NoteType.ayah,
-          content: 'تدبر الآية',
-          ayahId: 1,
-          surahNumber: 1,
-          ayahNumber: 1,
-          page: 1,
-          ayahText: ayah.text,
-        );
-      });
-
-      await tester.pumpWidget(
-        wrapWithApp(const MushafWordWidget(word: endMarkerWord)),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('🔖📝'), findsOneWidget);
+      expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.bookmark_rounded), findsNothing);
     });
 
     testWidgets(
-      'Overlay does NOT alter line layout width (spacing invariance)',
+      'Bookmarked + Note State: displays both bookmark and note icons',
       (tester) async {
-        // Measure unadorned size
-        await tester.pumpWidget(
-          wrapWithApp(const MushafWordWidget(word: endMarkerWord)),
-        );
-        await tester.pumpAndSettle();
-        final normalSize = tester.getSize(find.byType(MushafWordWidget));
-
-        // Add Bookmark
+        final page1 = QuranRepository.instance.getPage(1);
         final ayah = QuranRepository.instance.getAyah(1, 1)!;
         await tester.runAsync(() async {
           await UserDataStore.instance.toggleBookmark(ayah);
-        });
-        await tester.pumpWidget(
-          wrapWithApp(const MushafWordWidget(word: endMarkerWord)),
-        );
-        await tester.pumpAndSettle();
-        final bookmarkSize = tester.getSize(find.byType(MushafWordWidget));
-        expect(bookmarkSize.width, equals(normalSize.width));
-
-        // Add Note (Bookmarked + Note)
-        await tester.runAsync(() async {
           await UserDataStore.instance.saveNote(
             type: NoteType.ayah,
-            content: 'ملاحظة',
+            content: 'تدبر الآية',
             ayahId: 1,
             surahNumber: 1,
             ayahNumber: 1,
@@ -167,12 +106,12 @@ void main() {
             ayahText: ayah.text,
           );
         });
-        await tester.pumpWidget(
-          wrapWithApp(const MushafWordWidget(word: endMarkerWord)),
-        );
+
+        await tester.pumpWidget(wrapWithApp(QuranPageView(page: page1)));
         await tester.pumpAndSettle();
-        final combinedSize = tester.getSize(find.byType(MushafWordWidget));
-        expect(combinedSize.width, equals(normalSize.width));
+
+        expect(find.byIcon(Icons.bookmark_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
       },
     );
   });
@@ -186,7 +125,6 @@ void main() {
       await tester.pumpWidget(wrapWithApp(AyahActionSheet(ayah: ayah)));
       await tester.pumpAndSettle();
 
-      // Check all 6 actions exist
       expect(find.text('وقفة تدبر'), findsOneWidget);
       expect(find.text('رابط آيات'), findsOneWidget);
       expect(find.text('ملاحظة'), findsOneWidget);
@@ -194,7 +132,6 @@ void main() {
       expect(find.text('تمييز'), findsOneWidget);
       expect(find.text('نسخ'), findsOneWidget);
 
-      // Check that each of the 6 actions is wrapped in an Expanded widget
       final actionsRowFinder = find.byWidgetPredicate(
         (w) =>
             w is Row &&
@@ -220,13 +157,13 @@ void main() {
       expect(find.text('لا تظهر لي هذه النافذة مرة أخرى'), findsOneWidget);
       expect(find.byType(Checkbox), findsOneWidget);
 
-      // Find the SizedBox preceding the InkWell (height was reduced from 16 to 6)
       final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
       final hasReducedSpacing = sizedBoxes.any((box) => box.height == 6.0);
       expect(
         hasReducedSpacing,
         isTrue,
-        reason: 'Intro screen option must be raised by ~10px using SizedBox(height: 6)',
+        reason:
+            'Intro screen option must be raised by ~10px using SizedBox(height: 6)',
       );
     });
   });

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// اللغات المدعومة في واجهة تطبيق تَدْبِير مع اتجاه النص المقابل لكل لغة.
 enum AppLanguage {
   arabic('ar', 'العربية', TextDirection.rtl),
   english('en', 'English', TextDirection.ltr);
@@ -10,6 +11,7 @@ enum AppLanguage {
 
   const AppLanguage(this.code, this.label, this.direction);
 
+  /// استرجاع لغة التطبيق المقابلة لرمز اللغة المحفوظ، مع اعتماد العربية افتراضياً.
   static AppLanguage fromCode(String code) {
     return AppLanguage.values.firstWhere(
       (l) => l.code == code,
@@ -18,10 +20,12 @@ enum AppLanguage {
   }
 }
 
+/// مستودع النصوص المترجمة لواجهة المستخدم باللغتين العربية والإنجليزية.
 class AppStrings {
   final AppLanguage language;
   const AppStrings(this.language);
 
+  /// ما إذا كانت اللغة الحالية للتطبيق هي اللغة العربية.
   bool get isArabic => language == AppLanguage.arabic;
 
   // App Identity
@@ -40,51 +44,42 @@ class AppStrings {
   String get reminders => isArabic ? 'التنبيهات' : 'Reminders';
   String get ayahLinks => isArabic ? 'روابط الآيات' : 'Ayah Links';
   String get backup => isArabic ? 'النسخ الاحتياطي' : 'Backup & Restore';
+  String get duas => isArabic ? 'الأدعية' : 'Duas';
+  String get quranDuas => isArabic ? 'أدعية من القرآن' : 'Duas from the Quran';
   String get about => isArabic ? 'عن تَدْبِير' : 'About Tadbeer';
   String get more => isArabic ? 'المزيد' : 'More';
-
-  // Home Screen
-  String get lastReading => isArabic ? 'آخر قراءة' : 'Last Reading';
-  String get startFromBeginning =>
-      isArabic ? 'ابدأ القراءة من الصفحة الأولى' : 'Start reading from page 1';
-  String surahAndPage(String surahName, int page) =>
-      isArabic ? 'سورة $surahName · ص $page' : 'Surah $surahName · p. $page';
-  String get quickActions => isArabic ? 'الأقسام الرئيسية' : 'Main Sections';
 
   // Tadbeer Intro
   String get tadbeerVerse =>
       'أَفَلَا يَتَدَبَّرُونَ الْقُرْآنَ أَمْ عَلَىٰ قُلُوبٍ أَقْفَالُهَا';
   String get tadbeerVerseRef =>
       isArabic ? 'سورة محمد · آية ٢٤' : 'Surah Muhammad · Verse 24';
-  String get tadbeerMessage => isArabic
-      ? 'تَدْبِير هو رفيقك الهادئ لقراءة كتاب الله وتأمّل آياته، بدون إعلانات أو اتّصال بالإنترنت، وتبقى بياناتك على جهازك فقط.'
-      : 'Tadbeer is your calm companion for reading and reflecting upon the Quran, offline and private on your device.';
 
-  /// Backward compatibility aliases
+  String get tadbeerMessage => isArabic
+      ? 'عِش مع القرآن، وتأمّل آياته، وتدبّر معانيها، واربط بين الآيات، ودوّن خواطرك، واستلهم هدايته.'
+      : 'Engage with the Quran, reflect on its verses, contemplate their meanings, connect related verses, record your thoughts, and draw inspiration from its guidance.';
+
   String get tadabburVerse => tadbeerVerse;
-  String get tadabburVerseRef => tadbeerVerseRef;
-  String get tadabburMessage => tadbeerMessage;
-  String get continueToApp =>
-      isArabic ? 'متابعة إلى التطبيق' : 'Continue to Tadbeer';
-  String get hideIntroPermanently => isArabic
-      ? 'إخفاء هذه الرسائل نهائيًا'
-      : 'Never show this introduction again';
 
   // Quran Reader & Side Menu
+  /// تنسيق نص رقم الصفحة الحالية في المصحف.
   String pageNumber(int page) => isArabic ? 'صفحة $page' : 'Page $page';
+
+  /// تنسيق نص رقم الجزء الحالي في المصحف.
   String juzNumber(int juz) => isArabic ? 'الجزء $juz' : 'Juz $juz';
+
+  /// تنسيق نص رقم الحزب الحالي في المصحف.
   String hizbNumber(int hizb) => isArabic ? 'الحزب $hizb' : 'Hizb $hizb';
+
   String get surahs => isArabic ? 'السور' : 'Surahs';
   String get juzs => isArabic ? 'الأجزاء' : 'Juzs';
   String get jumpToPage => isArabic ? 'الانتقال إلى صفحة' : 'Jump to Page';
-  String get enterPageNumber =>
-      isArabic ? 'أدخل رقم الصفحة (١-٦٠٤)' : 'Enter page number (1-604)';
   String get go => isArabic ? 'انتقال' : 'Go';
   String get cancel => isArabic ? 'إلغاء' : 'Cancel';
   String get close => isArabic ? 'إغلاق' : 'Close';
   String get sajdah => isArabic ? 'سجدة تلاوة' : 'Sajdah';
-  String get meccan => isArabic ? 'مكية' : 'Meccan';
-  String get medinan => isArabic ? 'مدنية' : 'Medinan';
+
+  /// تنسيق نص عدد آيات السورة.
   String ayahCount(int count) => isArabic ? '$count آية' : '$count Verses';
 
   // Ayah Action Modal
@@ -123,14 +118,22 @@ class AppStrings {
       isArabic ? 'لا توجد آيات مميزة بعد' : 'No highlights yet';
 
   // Search
-  String get searchPlaceholder =>
-      isArabic ? 'ابحث في الآيات أو الملاحظات...' : 'Search ayahs or notes...';
-  String get quranResults => isArabic ? 'الآيات' : 'Quran Verses';
-  String get noteResults => isArabic ? 'الملاحظات' : 'Notes';
+  String get searchGlobalPlaceholder =>
+      isArabic
+          ? 'ابحث في القرآن، الملاحظات، التدبر، والمزيد...'
+          : 'Search Quran, notes, reflections, and more...';
+  String get searchAll => isArabic ? 'الكل' : 'All';
+  String get searchBookmarksHint =>
+      isArabic ? 'ابحث في الآيات المحفوظة...' : 'Search bookmarks...';
+  String get searchHighlightsHint =>
+      isArabic ? 'ابحث في الآيات المميزة...' : 'Search highlights...';
+  String get searchRemindersHint =>
+      isArabic ? 'ابحث في التنبيهات...' : 'Search reminders...';
+  String get searchNotesHint =>
+      isArabic ? 'ابحث في الملاحظات...' : 'Search notes...';
+  String get tadbeerSectionTitle => isArabic ? 'التدبر' : 'Tadbeer';
   String get noSearchResults =>
       isArabic ? 'لا توجد نتائج مطابقة' : 'No matching results found';
-  String searchResultsCount(int count) =>
-      isArabic ? '$count نتيجة' : '$count results';
 
   // Reminders
   String get addReminder => isArabic ? 'إضافة تنبيه' : 'Add Reminder';
@@ -139,28 +142,19 @@ class AppStrings {
       isArabic ? 'عنوان التنبيه (اختياري)' : 'Reminder Title (optional)';
   String get defaultReminderTitle =>
       isArabic ? 'ورد القرآن الكريم' : 'Daily Quran Reading';
-  String get defaultReminderBody => isArabic
-      ? 'حان وقت تلاوة وتدبّر القرآن الكريم'
-      : 'Time for your Quran reading and reflection';
   String get reminderTime => isArabic ? 'وقت التنبيه' : 'Time';
   String get repeatDaily => isArabic ? 'تكرار يومي' : 'Repeat Daily';
   String get repeatOnce => isArabic ? 'مرة واحدة' : 'Once';
   String get selectDays => isArabic ? 'أيام التكرار' : 'Repeat Days';
   String get noRemindersYet =>
       isArabic ? 'لا توجد تنبيهات قراءة مضافة' : 'No reading reminders added';
-  String get enableNotifications => isArabic
-      ? 'يرجى تفعيل إذن الإشعارات'
-      : 'Please enable notification permissions';
 
   // Ayah Links (روابط الآيات)
   String get newAyahLink => isArabic ? 'إنشاء رابط آيات' : 'New Ayah Link';
   String get addToAyahLink =>
       isArabic ? 'إضافة إلى رابط آيات' : 'Add to Ayah Links';
-  String get chooseAyahLink => isArabic ? 'اختر رابط آيات' : 'Choose Ayah Link';
-  String get createAndAdd => isArabic ? 'إنشاء وإضافة' : 'Create & Add';
   String get networkView => isArabic ? 'شبكة' : 'Network';
   String get orderedView => isArabic ? 'مرتب' : 'Ordered';
-  String get cardsView => isArabic ? 'بطاقات' : 'Cards';
   String get autoLayout => isArabic ? 'إعادة الترتيب تلقائيًا' : 'Auto Layout';
   String get linkTitle =>
       isArabic ? 'عنوان الرابط / الفكرة' : 'Link Title / Theme';
@@ -173,22 +167,17 @@ class AppStrings {
       ? 'سجل تأملك أو الفكرة التي تجمع هذه الآيات...'
       : 'Record your reflection connecting these verses...';
   String get addVerse => isArabic ? 'إضافة آية' : 'Add Verse';
-  String get removeVerse => isArabic ? 'إزالة الآية' : 'Remove Verse';
-  String get openInQuran => isArabic ? 'فتح في المصحف' : 'Open in Quran';
+  String get resetToCenter => isArabic ? 'العودة إلى الوسط' : 'Center View';
   String get noAyahLinksYet =>
       isArabic ? 'لا توجد روابط آيات بعد' : 'No ayah links yet';
-  String get noVersesInLink => isArabic
-      ? 'لم تتم إضافة أي آيات لهذا الرابط بعد'
-      : 'No ayahs added to this link yet';
   String get ayahLinksSubtitle => isArabic
       ? 'خريطة شخصية لربط الآيات واستكشاف العلاقات التدبرية'
       : 'Personal maps connecting verses explored during Tadbeer';
+
+  /// تنسيق نص عدد الآيات المربوطة في الرابط.
   String versesCount(int count) => isArabic ? '$count آيات' : '$count Verses';
-  String linksCount(int count) => isArabic ? '$count روابط' : '$count Links';
 
   // Backup & Restore
-  String get fullBackup => isArabic ? 'نسخة احتياطية كاملة' : 'Full Backup';
-  String get customBackup => isArabic ? 'نسخة مخصصة' : 'Custom Backup';
   String get exportBackup =>
       isArabic ? 'تصدير نسخة احتياطية' : 'Export Backup File';
   String get restoreBackup =>
@@ -200,9 +189,13 @@ class AppStrings {
       : 'Restoring a backup will completely replace your current user data. It will not merge. Do you want to proceed?';
   String get confirmRestore =>
       isArabic ? 'استبدال واستعادة' : 'Replace & Restore';
-  String get backupSuccess => isArabic
-      ? 'تم تصدير النسخة الاحتياطية بنجاح'
-      : 'Backup exported successfully';
+  String get saveToDeviceFiles =>
+      isArabic ? 'حفظ في ملفات الجهاز' : 'Save to Device Files';
+  String get shareViaApps =>
+      isArabic ? 'مشاركة عبر التطبيقات' : 'Share via Apps';
+  String get backupSavedSuccess => isArabic
+      ? 'تم حفظ النسخة الاحتياطية في الملفات بنجاح'
+      : 'Backup saved to files successfully';
   String get restoreSuccess =>
       isArabic ? 'تمت استعادة البيانات بنجاح' : 'Data restored successfully';
   String get corruptBackupError => isArabic
@@ -219,14 +212,13 @@ class AppStrings {
   String get dark => isArabic ? 'داكن' : 'Dark';
   String get system => isArabic ? 'تلقائي (حسب النظام)' : 'System Default';
   String get languageTitle => isArabic ? 'اللغة' : 'Language';
-  String get readingSettings =>
-      isArabic ? 'إعدادات القراءة' : 'Reading Settings';
   String get fontSize => isArabic ? 'حجم خط المصحف' : 'Quran Font Size';
   String get aboutContent => isArabic
-      ? 'تَدْبِير هو تطبيق قرآني هادف تم بناؤه لخدمة تلاوة وتدبّر القرآن الكريم.\nيعمل محليًا دون إنترنت وبخصوصية تامة بدون إعلانات أو تتبع.\nالنص القرآني معتمد وموثق من مشروع تنزيل (Tanzil Project).'
-      : 'Tadbeer is an offline-first Quran reading and tadbeer application.\nBuilt with complete privacy, no internet required, no ads, and no tracking.\nQuran text is verified from the Tanzil Project under CC-BY 3.0.';
+      ? 'تدبير مشروع قرآني يهدف إلى تعزيز التدبّر في آيات الله، ومساعدة المسلم على التأمل في معاني القرآن الكريم، والتفكّر في هداياته، واستحضار أثر آياته في الحياة والعمل بها، لتكون علاقتنا بالقرآن قائمة على التدبّر والفهم والاهتداء، لا على التلاوة وحدها.'
+      : 'Tadbeer is a Quranic project aimed at fostering contemplation of Allah\'s verses, helping reflect on the meanings of the Holy Quran, pondering its guidance, and living by its teachings—so our relationship with the Quran is grounded in contemplation, understanding, and guidance, not recitation alone.';
 }
 
+/// عنصر وراثة لتوفير إعدادات اللغة والنصوص المترجمة لجميع عناصر شجرة الواجهة.
 class AppLocalizationScope extends InheritedWidget {
   final AppLanguage currentLanguage;
   final AppStrings strings;
@@ -240,6 +232,7 @@ class AppLocalizationScope extends InheritedWidget {
     required super.child,
   });
 
+  /// استرجاع نطاق الترجمة الحالي من سياق البناء.
   static AppLocalizationScope of(BuildContext context) {
     final scope = context
         .dependOnInheritedWidgetOfExactType<AppLocalizationScope>();
@@ -247,14 +240,19 @@ class AppLocalizationScope extends InheritedWidget {
     return scope!;
   }
 
+  /// إشعار العناصر التابعة عند تغيّر اللغة الحالية.
   @override
   bool updateShouldNotify(AppLocalizationScope oldWidget) {
     return currentLanguage != oldWidget.currentLanguage;
   }
 }
 
+/// امتداد يسهّل الوصول إلى النصوص المترجمة واللغة الحالية مباشرة عبر `context`.
 extension AppLocalizationExtension on BuildContext {
+  /// النصوص المترجمة المرتبطة باللغة الحالية.
   AppStrings get l10n => AppLocalizationScope.of(this).strings;
+
+  /// اللغة المفعّلة حالياً في الواجهة.
   AppLanguage get currentLanguage =>
       AppLocalizationScope.of(this).currentLanguage;
 }

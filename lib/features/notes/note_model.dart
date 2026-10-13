@@ -1,34 +1,52 @@
+/// أنواع الخواطر والملاحظات المتاحة في التطبيق.
 enum NoteType {
-  /// Note attached directly to a verified Quran ayah.
+  /// خواطر مرتبطة بآية قرآنية محددة.
   ayah,
 
-  /// Independent reflection or general Quran study note.
+  /// خواطر حرة عامة غير مرتبطة بآية بعينها.
   free,
 }
 
-/// Represents a user note in Tadbeer.
+/// يمثل خاطرة أو تدوينة للمستخدم في تطبيق تدبّر.
 ///
-/// Can either be an Ayah Note (linked to a stable Quran ayah ID)
-/// or a Free Note (with custom title and content).
+/// ملاحظة:
+/// الخواطر تدعم نوعين: خواطر مرتبطة بآية محددة (مع حفظ رقم السورة والآية والصفحة)،
+/// أو خواطر حرة. يتم حفظها محلياً وعرضها في تدفق موحد مرتب من الأحدث إلى الأقدم.
 class NoteItem {
+  /// المعرّف الفريد للملاحظة.
   final String id;
+
+  /// نوع الملاحظة (مرتبطة بآية أو حرة).
   final NoteType type;
+
+  /// عنوان الملاحظة الاختياري.
   final String? title;
+
+  /// المحتوى النصي للخاطرة أو الملاحظة.
   final String content;
 
-  // Ayah linkage fields (populated when type == NoteType.ayah)
-  // IMPORTANT:
-  // This ayahId must remain stable (1..6236) because user reflections
-  // link directly to verified Quran ayahs across app sessions.
+  /// حقول الربط بالآية (تُملأ عند كون الخاطرة من نوع [NoteType.ayah]).
   final int? ayahId;
+
+  /// رقم السورة المرتبطة بالملاحظة إن وجدت.
   final int? surahNumber;
+
+  /// رقم الآية المرتبطة بالملاحظة إن وجدت.
   final int? ayahNumber;
+
+  /// رقم صفحة المصحف للآية المرتبطة إن وجدت.
   final int? page;
+
+  /// النص القرآني للآية المرتبطة بالملاحظة إن وجد.
   final String? ayahText;
 
+  /// تاريخ ووقت إنشاء الملاحظة.
   final DateTime createdAt;
+
+  /// تاريخ ووقت آخر تحديث للملاحظة.
   final DateTime updatedAt;
 
+  /// ينشئ كائن ملاحظة أو خاطرة جديد.
   const NoteItem({
     required this.id,
     required this.type,
@@ -43,8 +61,10 @@ class NoteItem {
     required this.updatedAt,
   });
 
+  /// ما إذا كانت هذه الملاحظة مرتبطة بآية قرآنية محددة.
   bool get isAyahNote => type == NoteType.ayah;
 
+  /// يحول بيانات الملاحظة إلى خريطة JSON للتخزين المحلي.
   Map<String, dynamic> toJson() => {
     'id': id,
     'type': type.name,
@@ -59,6 +79,7 @@ class NoteItem {
     'updatedAt': updatedAt.toIso8601String(),
   };
 
+  /// ينشئ كائن ملاحظة من خريطة بيانات JSON المحفوظة.
   factory NoteItem.fromJson(Map<String, dynamic> json) {
     return NoteItem(
       id: json['id'] as String,
@@ -75,6 +96,7 @@ class NoteItem {
     );
   }
 
+  /// ينشئ نسخة محدثة من الملاحظة مع تعديل الحقول الممررة.
   NoteItem copyWith({String? title, String? content, DateTime? updatedAt}) {
     return NoteItem(
       id: id,

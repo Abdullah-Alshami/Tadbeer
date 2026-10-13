@@ -7,8 +7,10 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../app/localization.dart';
 import '../../app/theme.dart';
-import '../../core/security/backup_crypto_service.dart';
+import '../../core/services/backup_crypto_service.dart';
 
+/// شاشة إنشاء واستعادة النسخ الاحتياطية المشفرة لبيانات المستخدم.
+///
 /// Screen for creating and restoring encrypted user backups (.quranbackup).
 ///
 /// EDUCATIONAL NOTE:
@@ -18,12 +20,15 @@ import '../../core/security/backup_crypto_service.dart';
 /// - RESTORE CONTRACT: Restore strictly REPLACES current local data after verifying checksum.
 ///   It never merges to ensure data integrity and avoid orphaned or duplicated records.
 class BackupScreen extends StatefulWidget {
+  /// ينشئ شاشة النسخ الاحتياطي والاستعادة.
   const BackupScreen({super.key});
 
+  /// ينشئ حالة شاشة النسخ الاحتياطي.
   @override
   State<BackupScreen> createState() => _BackupScreenState();
 }
 
+/// الحالة الداخلية لشاشة النسخ الاحتياطي المسؤولة عن التصدير والمشاركة والاستعادة.
 class _BackupScreenState extends State<BackupScreen> {
   bool _includeNotes = true;
   bool _includeBookmarks = true;
@@ -33,57 +38,74 @@ class _BackupScreenState extends State<BackupScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isProcessing = false;
 
+  /// يحرر موارد متحكم حقل كلمة المرور عند إغلاق الشاشة.
   @override
   void dispose() {
     _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _exportBackup() async {
-    setState(() => _isProcessing = true);
-    final l10n = context.l10n;
+  /// ينشئ ملف النسخة الاحتياطية المشفرة في المجلد المؤقت ويعيد مساره.
+  Future<String?> _generateBackupFile() async {
+    final tempDir = await getTemporaryDirectory();
+    final now = DateTime.now();
+    final timestamp =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}-${now.minute.toString().padLeft(2, '0')}';
+    final filePath = '${tempDir.path}/tadbeer_backup_$timestamp.quranbackup';
 
-    try {
-      final tempDir = await getTemporaryDirectory();
-      final timestamp = DateTime.now()
-          .toIso8601String()
-          .replaceAll(':', '-')
-          .split('.')
-          .first;
-      final filePath = '${tempDir.path}/tadbeer_backup_$timestamp.quranbackup';
+    final result = await BackupCryptoService.createBackupFile(
+      targetPath: filePath,
+      password: _passwordController.text,
+      notes: _includeNotes,
+      bookmarks: _includeBookmarks,
+      highlights: _includeHighlights,
+      settings: _includeSettings,
+      reminders: _includeReminders,
+    );
 
-      final result = await BackupCryptoService.createBackupFile(
-        targetPath: filePath,
-        password: _passwordController.text,
-        notes: _includeNotes,
-        bookmarks: _includeBookmarks,
-        highlights: _includeHighlights,
-        settings: _includeSettings,
-        reminders: _includeReminders,
-      );
-
-      if (!result.success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                result.errorMessage ?? 'فشل إنشاء النسخة الاحتياطية',
-              ),
-            ),
-          );
-        }
-        return;
-      }
-
-      await SharePlus.instance.share(
-        ShareParams(files: [XFile(filePath)], subject: 'Tadbeer Backup'),
-      );
-
+    if (!result.success) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              l10n.backupSuccess,
+              result.errorMessage ?? 'فشل إنشاء النسخة الاحتياطية',
+            ),
+          ),
+        );
+      }
+      return null;
+    }
+
+    return filePath;
+  }
+
+  /// يصدر ويحفظ ملف النسخة الاحتياطية المشفرة مباشرة في ملفات الجهاز.
+  ///
+  /// Exports and saves the encrypted backup directly to the device storage/files.
+  Future<void> _exportBackupToFiles() async {
+    setState(() => _isProcessing = true);
+    final l10n = context.l10n;
+
+    try {
+      final filePath = await _generateBackupFile();
+      if (filePath == null) return;
+
+      final file = File(filePath);
+      final bytes = await file.readAsBytes();
+      final fileName = filePath.split('/').last;
+
+      final savedUri = await FilePicker.saveFile(
+        dialogTitle: 'اختر موقع حفظ النسخة الاحتياطية',
+        fileName: fileName,
+        bytes: bytes,
+        type: FileType.any,
+      );
+
+      if (savedUri != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.backupSavedSuccess,
               style: const TextStyle(fontFamily: 'Amiri'),
             ),
             backgroundColor: AppColors.olive,
@@ -92,14 +114,43 @@ class _BackupScreenState extends State<BackupScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ أثناء حفظ الملف: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
   }
 
+  /// يصدر ويشارك ملف النسخة الاحتياطية عبر قائمة المشاركة في النظام.
+  ///
+  /// Exports and shares the backup file through system share sheet (WhatsApp, Telegram, Drive, etc.).
+  Future<void> _shareBackup() async {
+    setState(() => _isProcessing = true);
+
+    try {
+      final filePath = await _generateBackupFile();
+      if (filePath == null) return;
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(filePath)],
+          subject: 'Tadbeer Backup',
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  /// يختار ملف نسخة احتياطية من الجهاز ويستعيد البيانات بعد تأكيد كلمة المرور.
   Future<void> _pickAndRestore() async {
     final l10n = context.l10n;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -245,6 +296,7 @@ class _BackupScreenState extends State<BackupScreen> {
     }
   }
 
+  /// يبني واجهة شاشة النسخ الاحتياطي ببطاقتي التصدير والاستعادة.
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -268,16 +320,17 @@ class _BackupScreenState extends State<BackupScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Export Section Card
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : AppColors.comsilk,
+              Material(
+                color: isDark ? AppColors.darkSurface : AppColors.comsilk,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border(context)),
+                  side: BorderSide(color: AppColors.border(context)),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                     Row(
                       children: [
                         const Icon(
@@ -384,7 +437,7 @@ class _BackupScreenState extends State<BackupScreen> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: _isProcessing ? null : _exportBackup,
+                      onPressed: _isProcessing ? null : _exportBackupToFiles,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.olive,
                         foregroundColor: Colors.white,
@@ -402,28 +455,56 @@ class _BackupScreenState extends State<BackupScreen> {
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Icon(Icons.share),
+                          : const Icon(Icons.save_alt_rounded),
                       label: Text(
-                        l10n.exportBackup,
+                        l10n.saveToDeviceFiles,
                         style: const TextStyle(
                           fontFamily: 'Amiri',
                           fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: _isProcessing ? null : _shareBackup,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor:
+                            isDark ? AppColors.comsilk : AppColors.olive,
+                        side: BorderSide(
+                          color: (isDark ? AppColors.comsilk : AppColors.olive)
+                              .withValues(alpha: 0.45),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.share_outlined, size: 20),
+                      label: Text(
+                        l10n.shareViaApps,
+                        style: const TextStyle(
+                          fontFamily: 'Amiri',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 24),
 
-              // Restore Section Card
-              Container(
+            // Restore Section Card
+            Material(
+              color: isDark ? AppColors.darkSurface : AppColors.comsilk,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: AppColors.border(context)),
+              ),
+              child: Padding(
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : AppColors.comsilk,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border(context)),
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -487,8 +568,9 @@ class _BackupScreenState extends State<BackupScreen> {
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
         ),
       ),
     );
